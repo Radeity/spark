@@ -211,6 +211,7 @@ class SparkContext(config: SparkConf) extends Logging {
   private var _executorMemory: Int = _
   private var _schedulerBackend: SchedulerBackend = _
   private var _taskScheduler: TaskScheduler = _
+  private var _earlySchedulerTracker: EarlyScheduleTracker = _
   private var _heartbeatReceiver: RpcEndpointRef = _
   @volatile private var _dagScheduler: DAGScheduler = _
   private var _applicationId: String = _
@@ -318,6 +319,11 @@ class SparkContext(config: SparkConf) extends Logging {
   private[spark] def taskScheduler: TaskScheduler = _taskScheduler
   private[spark] def taskScheduler_=(ts: TaskScheduler): Unit = {
     _taskScheduler = ts
+  }
+
+  private[spark] def earlyScheduleTracker: EarlyScheduleTracker = _earlySchedulerTracker
+  private[spark] def earlyScheduleTracker_=(es: EarlyScheduleTracker): Unit = {
+    _earlySchedulerTracker = es
   }
 
   private[spark] def dagScheduler: DAGScheduler = _dagScheduler
@@ -552,6 +558,9 @@ class SparkContext(config: SparkConf) extends Logging {
 
     // Initialize any plugins before the task scheduler is initialized.
     _plugins = PluginContainer(this, _resources.asJava)
+
+    // Initialize EarlyScheduleTracker
+    _earlySchedulerTracker = new EarlyScheduleTracker(this, conf, env.rpcEnv)
 
     // Create and start the scheduler
     val (sched, ts) = SparkContext.createTaskScheduler(this, master, deployMode)

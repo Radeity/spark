@@ -1710,6 +1710,17 @@ package object config {
     .version("0.8.0")
     .fallbackConf(LOCALITY_WAIT)
 
+  private[spark] val LOCALITY_WAIT_SITE = ConfigBuilder("spark.locality.wait.site")
+    .version("0.8.0")
+    .timeConf(TimeUnit.MILLISECONDS)
+    .createWithDefaultString("150s")
+
+  private[spark] val RESCHEDULE_TRIGGER_RATIO =
+    ConfigBuilder("spark.reschedule.trigger.ratio")
+      .version("2.4.0")
+      .doubleConf
+      .createWithDefault(0.5)
+
   private[spark] val REDUCER_MAX_SIZE_IN_FLIGHT = ConfigBuilder("spark.reducer.maxSizeInFlight")
     .doc("Maximum size of map outputs to fetch simultaneously from each reduce task, " +
       "in MiB unless otherwise specified. Since each output requires us to create a " +

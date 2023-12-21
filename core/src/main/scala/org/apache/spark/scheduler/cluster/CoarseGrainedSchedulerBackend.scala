@@ -117,6 +117,15 @@ class CoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, val rpcEnv: Rp
 
   class DriverEndpoint extends IsolatedRpcEndpoint with Logging {
 
+    private val hostSite: Map[String, String] = Map(
+      "10.176.24.55" -> "0",
+      "10.176.24.56" -> "0",
+      "10.176.24.57" -> "0",
+      "10.176.24.58" -> "1",
+      "10.176.24.59" -> "1",
+      "10.176.24.60" -> "1"
+    )
+
     override val rpcEnv: RpcEnv = CoarseGrainedSchedulerBackend.this.rpcEnv
 
     protected val addressToExecutorId = new HashMap[RpcAddress, String]
@@ -306,7 +315,9 @@ class CoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, val rpcEnv: Rp
               Some(executorData.executorAddress.hostPort),
               executorData.resourcesInfo.map { case (rName, rInfo) =>
                 (rName, rInfo.availableAddrs.toBuffer)
-              }, executorData.resourceProfileId)
+              },
+              executorData.resourceProfileId,
+              hostSite.getOrElse(executorData.executorHost, null))
         }.toIndexedSeq
         scheduler.resourceOffers(workOffers, true)
       }
@@ -336,7 +347,9 @@ class CoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, val rpcEnv: Rp
               Some(executorData.executorAddress.hostPort),
               executorData.resourcesInfo.map { case (rName, rInfo) =>
                 (rName, rInfo.availableAddrs.toBuffer)
-              }, executorData.resourceProfileId))
+              },
+              executorData.resourceProfileId,
+              hostSite.getOrElse(executorData.executorHost, null)))
           scheduler.resourceOffers(workOffers, false)
         } else {
           Seq.empty

@@ -82,6 +82,25 @@ private[spark] object CoarseGrainedClusterMessages {
     }
   }
 
+  case class ModelReady(
+      mapStageId: String,
+      reduceStageId: String,
+      numMappers: Int,
+      numReducers: Int,
+      shuffleId: Int)
+    extends CoarseGrainedClusterMessage
+
+  case class SiteBandwidthUpdate(
+      srcSite: Int,
+      dstSite: Int,
+      bandwidth: Double)
+    extends CoarseGrainedClusterMessage
+
+  case class RegisterSiteLifeCycleManager(
+      siteId: String,
+      lifeCycleManagerRef: RpcEndpointRef)
+    extends CoarseGrainedClusterMessage
+
   // Internal messages in driver
   case object ReviveOffers extends CoarseGrainedClusterMessage
 

@@ -92,6 +92,8 @@ private[spark] class TaskSchedulerImpl(
   // because ExecutorAllocationClient is created after this TaskSchedulerImpl.
   private[scheduler] lazy val healthTrackerOpt = maybeCreateHealthTracker(sc)
 
+  private val earlyScheduleTrackerOpt = Some(sc.earlyScheduleTracker)
+
   val conf = sc.conf
 
   // How often to check for speculative tasks
@@ -278,7 +280,8 @@ private[spark] class TaskSchedulerImpl(
   private[scheduler] def createTaskSetManager(
       taskSet: TaskSet,
       maxTaskFailures: Int): TaskSetManager = {
-    new TaskSetManager(this, taskSet, maxTaskFailures, healthTrackerOpt, clock)
+    new TaskSetManager(this, taskSet, maxTaskFailures, healthTrackerOpt, clock,
+      earlyScheduleTrackerOpt)
   }
 
   override def cancelTasks(stageId: Int, interruptThread: Boolean): Unit = synchronized {
@@ -383,6 +386,7 @@ private[spark] class TaskSchedulerImpl(
     for (i <- 0 until shuffledOffers.size) {
       val execId = shuffledOffers(i).executorId
       val host = shuffledOffers(i).host
+      val site = shuffledOffers(i).site
       val taskSetRpID = taskSet.taskSet.resourceProfileId
       // make the resource profile id a hard requirement for now - ie only put tasksets
       // on executors where resource profile exactly matches.
@@ -394,7 +398,7 @@ private[spark] class TaskSchedulerImpl(
             val prof = sc.resourceProfileManager.resourceProfileFromId(taskSetRpID)
             val taskCpus = ResourceProfile.getTaskCpusOrDefaultForProfile(prof, conf)
             val (taskDescOption, didReject) =
-              taskSet.resourceOffer(execId, host, maxLocality, taskResAssignments)
+              taskSet.resourceOffer(execId, host, maxLocality, taskResAssignments, site)
             noDelayScheduleRejects &= !didReject
             for (task <- taskDescOption) {
               tasks(i) += task
