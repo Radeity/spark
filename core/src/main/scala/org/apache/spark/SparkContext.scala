@@ -2097,6 +2097,10 @@ class SparkContext(config: SparkConf) extends Logging {
       }
       _heartbeater = null
     }
+    if (_earlySchedulerTracker != null) {
+      _earlySchedulerTracker.stop()
+      _earlySchedulerTracker = null
+    }
     if (_shuffleDriverComponents != null) {
       Utils.tryLogNonFatalError {
         _shuffleDriverComponents.cleanupApplication()

@@ -1721,6 +1721,18 @@ package object config {
       .doubleConf
       .createWithDefault(0.5)
 
+  private[spark] val SITE_NUMBER =
+    ConfigBuilder("spark.site.number")
+      .version("2.4.0")
+      .intConf
+      .createWithDefault(5)
+
+  private[spark] val THRIFT_SERVER_HOST =
+    ConfigBuilder("spark.gurobi.server.host")
+      .version("2.4.0")
+      .stringConf
+      .createWithDefault("127.0.0.1")
+
   private[spark] val REDUCER_MAX_SIZE_IN_FLIGHT = ConfigBuilder("spark.reducer.maxSizeInFlight")
     .doc("Maximum size of map outputs to fetch simultaneously from each reduce task, " +
       "in MiB unless otherwise specified. Since each output requires us to create a " +

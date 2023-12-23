@@ -93,7 +93,7 @@ private[spark] object CoarseGrainedClusterMessages {
   case class SiteBandwidthUpdate(
       srcSite: Int,
       dstSite: Int,
-      bandwidth: Double)
+      bandwidth: Int)
     extends CoarseGrainedClusterMessage
 
   case class RegisterSiteLifeCycleManager(
