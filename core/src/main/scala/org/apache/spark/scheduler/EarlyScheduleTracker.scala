@@ -19,8 +19,7 @@ package org.apache.spark.scheduler
 
 import java.util.{ArrayList, Arrays, List}
 
-import scala.collection.mutable.{ArrayBuffer, HashMap}
-import scala.util.control._
+import scala.collection.mutable.HashMap
 
 import com.gurobi.gurobi.{GRB, GRBEnv, GRBLinExpr, GRBModel, GRBVar}
 
@@ -67,6 +66,8 @@ private[spark] class EarlyScheduleTracker(sc: SparkContext, conf: SparkConf, rpc
 
   private val bandwidthMatrix = initBandwidthMatrix()
 
+  private val siteLoad: List[java.lang.Double] = new ArrayList[java.lang.Double]()
+
   private val rescheduleTriggerRatio = conf.get(RESCHEDULE_TRIGGER_RATIO)
 
   // <modelUniqueId, (a,b)>
@@ -108,53 +109,43 @@ private[spark] class EarlyScheduleTracker(sc: SparkContext, conf: SparkConf, rpc
 
   def makeScheduleDecision(mapStageId: String, reduceStageId: String,
                            numMappers: Int, numReducers: Int, shuffleId: Int): Unit = {
-    val (decision1, time1) = makeNetworkDecision(mapStageId, reduceStageId, numMappers, numReducers)
-    val (decision2, time2) = makeLBDecision()
-    val scheduleDecision = adjustAlgorithm(decision1, decision2)
+    val (decisions, time, linkTime, u) = makeDecision(mapStageId, reduceStageId,
+                                                      numMappers, numReducers)
 
     for (idx <- 0 until numReducers) {
       val scheduleUniqueId = s"${reduceStageId}_${idx}"
-      earlyScheduleDecision.update(scheduleUniqueId, scheduleDecision(idx))
+      earlyScheduleDecision.update(scheduleUniqueId, decisions.get(idx))
     }
-    logInfo(s"Make new schedule decision: $scheduleDecision, broadcast to every Site Master")
-    val result = updatePartitionSiteMethod.invoke(shuffleManager, appUniqueId,
-                                                   shuffleId.asInstanceOf[Object], scheduleDecision)
+    logInfo(s"Make new schedule decision: $decisions, broadcast to every Site Master")
+    if (updatePartitionSiteMethod != null) {
+      val result = updatePartitionSiteMethod.invoke(shuffleManager, appUniqueId,
+        shuffleId.asInstanceOf[Object], decisions)
+    }
   }
 
   /**
    * make network-aware task placement decision
    * @return
    */
-  private def makeNetworkDecision(mapStageId: String, reduceStageId: String, numMappers: Int,
-                                  numReducers: Int): (ArrayBuffer[Int], Double) = {
-    // TODO: sort and make them the same order !!!
+  private def makeDecision(mapStageId: String, reduceStageId: String,
+                           numMappers: Int, numReducers: Int)
+                            : (List[Integer], Double, List[List[java.lang.Double]], Double) = {
     // S*M
     val finishTime = m1(mapStageId)
     // S*R*M
     val outputSize = m2(mapStageId, reduceStageId)
-    val request = new Request(numMappers, numReducers, numSites,
-                              bandwidthMatrix, finishTime, outputSize)
-
+    val request = new Request(numMappers, numReducers, numSites, 0.5)
+    request.setBandwidth(bandwidthMatrix)
+    request.setFinishTime(finishTime)
+    request.setOutputSize(outputSize)
+    request.setSiteLoad(siteLoad)
     val response: Response = thriftClient.gurobi(request)
 
-    val decisions = response.optimalDecision
+    val decisions = response.decision
     val time = response.maxTime
-
-    // convert decision format
-    val convertDecision = ArrayBuffer[Int]()
-    decisions.forEach(decision => {
-      val loop = new Breaks;
-      loop.breakable {
-        for (siteIdx <- 0 until numSites) {
-          if (decision.get(siteIdx) == true) {
-            convertDecision += siteIdx
-            loop.break
-          }
-        }
-      }
-    })
-
-    (convertDecision, time)
+    val linkTime = response.linkTime
+    val u = response.u
+    (decisions, time, linkTime, u)
   }
 
   // Deprecated
@@ -207,25 +198,6 @@ private[spark] class EarlyScheduleTracker(sc: SparkContext, conf: SparkConf, rpc
 
     model.dispose()
     env.dispose()
-  }
-
-  /**
-   * make capacity-aware(load-balance) task placement decision
-   * @return
-   */
-  private def makeLBDecision(): (ArrayBuffer[Int], Double) = {
-    (ArrayBuffer("0", "1", "0"), 0)
-  }
-
-  /**
-   * trade off two schedule decision and give the relatively optimal final decision
-   * @param decision1  network-aware decision
-   * @param decision2  capacity-aware decision
-   * @return
-   */
-  private def adjustAlgorithm(decision1: ArrayBuffer[Int],
-                              decision2: ArrayBuffer[Int]): Array[Int] = {
-    decision1 += decision2
   }
 
   /**

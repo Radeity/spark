@@ -17,13 +17,10 @@
 
 package org.apache.spark.scheduler
 
-import com.gurobi.gurobi.{GRB, GRBEnv, GRBLinExpr, GRBModel, GRBVar}
-
 import java.nio.ByteBuffer
 
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.concurrent.duration._
-import scala.util.Random
 
 import org.mockito.ArgumentMatchers.{any, anyInt, anyString, eq => meq}
 import org.mockito.Mockito.{atLeast, atMost, never, spy, times, verify, when}
@@ -37,7 +34,11 @@ import org.apache.spark.internal.config
 import org.apache.spark.resource.{ExecutorResourceRequests, ResourceProfile, TaskResourceRequests}
 import org.apache.spark.resource.ResourceUtils._
 import org.apache.spark.resource.TestResourceIDs._
+import org.apache.spark.scheduler.rpc.{gurobiService, Request, Response}
 import org.apache.spark.util.{Clock, ManualClock}
+
+import org.apache.thrift.protocol.TBinaryProtocol
+import org.apache.thrift.transport.{TSocket, TTransport}
 
 class FakeSchedulerBackend extends SchedulerBackend {
   def start(): Unit = {}
@@ -192,6 +193,23 @@ class TaskSchedulerImplSuite extends SparkFunSuite with LocalSparkContext with B
     assert(count > 0)
     assert(count < numTrials)
     assert(!failedTaskSet)
+  }
+
+  ignore("Schedule thrift RPC") {
+    val transport: TTransport = new TSocket("127.0.0.1", 7777)  // Python Server
+    transport.open()
+    val protocol = new TBinaryProtocol(transport)
+    val client = new gurobiService.Client(protocol)
+    val request = new Request(50, 50, 5, 0.4)
+    request.setBandwidth(null)
+    request.setFinishTime(null)
+    request.setOutputSize(null)
+    request.setSiteLoad(null)
+    val response: Response = client.gurobi(request)
+    print(response.decision)
+    print(response.maxTime)
+    print(response.linkTime)
+    print(response.u)
   }
 
   test("Scheduler correctly accounts for multiple CPUs per task") {
