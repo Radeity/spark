@@ -32,7 +32,6 @@ import org.apache.spark.internal.{config, Logging}
 import org.apache.spark.internal.config._
 import org.apache.spark.resource.ResourceInformation
 import org.apache.spark.scheduler.SchedulingMode._
-import org.apache.spark.scheduler.TaskLocality.SITE_LOCAL
 import org.apache.spark.util.{AccumulatorV2, Clock, LongAccumulator, SystemClock, Utils}
 import org.apache.spark.util.collection.MedianHeap
 
@@ -251,7 +250,7 @@ private[spark] class TaskSetManager(
 
     val earlyScheduleSite = if (earlyScheduleTracker == None) null else
                               earlyScheduleTracker.get.getEarlyScheduleDecision(taskSet.stageId, index)
-    if (earlyScheduleSite != null) {
+    if (taskSet.stageId != 0 && earlyScheduleSite != null) {
       pendingTaskSetToAddTo.forSite.getOrElseUpdate(earlyScheduleSite, new ArrayBuffer) += index
     } else {
       logInfo(s"No early schedule results, fall back to Vanilla Spark")
@@ -1135,7 +1134,7 @@ private[spark] class TaskSetManager(
    *
    */
   private def computeValidLocalityLevels(): Array[TaskLocality.TaskLocality] = {
-    import TaskLocality.{PROCESS_LOCAL, NODE_LOCAL, NO_PREF, RACK_LOCAL, ANY}
+    import TaskLocality.{PROCESS_LOCAL, NODE_LOCAL, NO_PREF, RACK_LOCAL, SITE_LOCAL, ANY}
     val levels = new ArrayBuffer[TaskLocality.TaskLocality]
     if (!pendingTasks.forSite.isEmpty) {
       levels += SITE_LOCAL

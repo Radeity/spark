@@ -72,6 +72,7 @@ private[ui] class StagePage(parent: StagesTab, store: AppStatusStore) extends We
       TaskLocality.PROCESS_LOCAL.toString() -> "Process local",
       TaskLocality.NODE_LOCAL.toString() -> "Node local",
       TaskLocality.RACK_LOCAL.toString() -> "Rack local",
+      TaskLocality.SITE_LOCAL.toString() -> "Site local",
       TaskLocality.ANY.toString() -> "Any")
     val localityNamesAndCounts = names.flatMap { case (key, name) =>
       localitySummary.get(key).map { count =>

@@ -61,6 +61,9 @@ private[spark] class EarlyScheduleTracker(sc: SparkContext, conf: SparkConf, rpc
     "10.176.24.55" -> "0",
     "10.176.24.56" -> "1",
     "10.176.24.57" -> "2",
+    "analysis-5" -> "0",
+    "analysis-6" -> "1",
+    "analysis-7" -> "2",
   )
 
   val shuffleManager = SparkEnv.get.shuffleManager
@@ -83,7 +86,7 @@ private[spark] class EarlyScheduleTracker(sc: SparkContext, conf: SparkConf, rpc
   private val loadWeight = (0.4, 0.3, 0.2, 0.1)
 
   // (hostUsageMap, siteLoadMap)
-  type LoadStatus = (HashMap[String, Double], HashMap[String, Double])
+  type LoadStatus = (HashMap[String, java.lang.Double], HashMap[String, java.lang.Double])
   private val loadStatus: LoadStatus = initLoadStatus()
 
   private val rescheduleTriggerRatio = conf.get(RESCHEDULE_TRIGGER_RATIO)
@@ -105,7 +108,9 @@ private[spark] class EarlyScheduleTracker(sc: SparkContext, conf: SparkConf, rpc
     if (scheduleSiteIdx != -1) {
       String.valueOf(scheduleSiteIdx)
     } else {
-      null
+      // For Test
+      "0"
+//      null
     }
   }
 
@@ -118,8 +123,8 @@ private[spark] class EarlyScheduleTracker(sc: SparkContext, conf: SparkConf, rpc
   }
 
   private def initLoadStatus(): LoadStatus = {
-    val hostUsageMap: HashMap[String, Double] = HashMap()
-    val siteLoadMap: HashMap[String, Double] = HashMap()
+    val hostUsageMap: HashMap[String, java.lang.Double] = HashMap()
+    val siteLoadMap: HashMap[String, java.lang.Double] = HashMap()
     hostSite.keys.foreach(hostUsageMap.put(_, 0))
     siteLocation.keys.foreach(siteLoadMap.put(_, 0))
 
@@ -278,13 +283,13 @@ private[spark] class EarlyScheduleTracker(sc: SparkContext, conf: SparkConf, rpc
       case LoadReport(host, uCPU, uMem, uBandwidth, uDisk) =>
         val site = hostSite(host)
         val numSiteHosts: Int = siteLocation(site).size
-        val usage: Double = loadWeight._1 * uCPU + loadWeight._2 * uMem +
-                    loadWeight._3 * uBandwidth + loadWeight._4 * uDisk
-        val lastUsage: Double = loadStatus._1(host)
+        val usage: java.lang.Double = loadWeight._1 * uCPU + loadWeight._2 * uMem +
+                                      loadWeight._3 * uBandwidth + loadWeight._4 * uDisk
+        val lastUsage: java.lang.Double = loadStatus._1(host)
         val newSiteLoad = loadStatus._2(site) + (usage - lastUsage) / numSiteHosts
         loadStatus._1(host) = usage
         loadStatus._2(site) = newSiteLoad
-        print(loadStatus)
+//        print(s"$loadStatus\n")
     }
   }
 }
