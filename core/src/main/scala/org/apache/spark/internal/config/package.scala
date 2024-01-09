@@ -1731,7 +1731,7 @@ package object config {
     ConfigBuilder("spark.gurobi.server.host")
       .version("2.4.0")
       .stringConf
-      .createWithDefault("127.0.0.1")
+      .createWithDefault("10.176.24.55")
 
   private[spark] val REDUCER_MAX_SIZE_IN_FLIGHT = ConfigBuilder("spark.reducer.maxSizeInFlight")
     .doc("Maximum size of map outputs to fetch simultaneously from each reduce task, " +

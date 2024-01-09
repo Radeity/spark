@@ -83,11 +83,19 @@ private[spark] object CoarseGrainedClusterMessages {
   }
 
   case class ModelReady(
-      mapStageId: String,
-      reduceStageId: String,
+      mapStageId: Int,
+      reduceStageId: Int,
       numMappers: Int,
       numReducers: Int,
       shuffleId: Int)
+    extends CoarseGrainedClusterMessage
+
+  case class LoadReport(
+      host: String,
+      uCPU: Double,
+      uMem: Double,
+      uBandwidth: Double,
+      uDisk: Double)
     extends CoarseGrainedClusterMessage
 
   case class SiteBandwidthUpdate(

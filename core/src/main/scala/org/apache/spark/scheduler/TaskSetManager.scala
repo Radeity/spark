@@ -249,11 +249,14 @@ private[spark] class TaskSetManager(
     if (isZombie) return
     val pendingTaskSetToAddTo = if (speculatable) pendingSpeculatableTasks else pendingTasks
 
-    val earlyScheduleSite = earlyScheduleTracker
-                            .get.getEarlyScheduleDecision(taskSet.id, index)
+    val earlyScheduleSite = if (earlyScheduleTracker == None) null else
+                              earlyScheduleTracker.get.getEarlyScheduleDecision(taskSet.stageId, index)
     if (earlyScheduleSite != null) {
       pendingTaskSetToAddTo.forSite.getOrElseUpdate(earlyScheduleSite, new ArrayBuffer) += index
     } else {
+      logInfo(s"No early schedule results, fall back to Vanilla Spark")
+      // TODO: Have to make schedule decision immediately and trigger cross-site data transfer
+      // TODO-update: 如果上游的map task都结束，stageEnd 前就应该触发做决策和 re-direct，否则数据都落盘了后续不好拉取
       for (loc <- tasks(index).preferredLocations) {
         loc match {
           case e: ExecutorCacheTaskLocation =>

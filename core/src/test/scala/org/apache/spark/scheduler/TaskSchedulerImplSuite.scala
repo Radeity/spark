@@ -34,6 +34,7 @@ import org.apache.spark.internal.config
 import org.apache.spark.resource.{ExecutorResourceRequests, ResourceProfile, TaskResourceRequests}
 import org.apache.spark.resource.ResourceUtils._
 import org.apache.spark.resource.TestResourceIDs._
+import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.LoadReport
 import org.apache.spark.scheduler.rpc.{gurobiService, Request, Response}
 import org.apache.spark.util.{Clock, ManualClock}
 
@@ -210,6 +211,14 @@ class TaskSchedulerImplSuite extends SparkFunSuite with LocalSparkContext with B
     print(response.maxTime)
     print(response.linkTime)
     print(response.u)
+  }
+
+  test("early schedule tracker load status report") {
+    val conf = new SparkConf()
+    sc = new SparkContext("local", "TaskSchedulerImplSuite", conf)
+    val endpoint = sc.earlyScheduleTracker.earlyScheduleTrackerEndpoint
+    endpoint.send(LoadReport("10.176.24.55", 0.7, 0.5, 0.7, 0.4))
+    endpoint.send(LoadReport("10.176.24.55", 0.8, 0.5, 0.7, 0.4))
   }
 
   test("Scheduler correctly accounts for multiple CPUs per task") {

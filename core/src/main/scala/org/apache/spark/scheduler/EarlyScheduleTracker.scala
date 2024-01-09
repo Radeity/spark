@@ -17,7 +17,7 @@
 
 package org.apache.spark.scheduler
 
-import java.util.{ArrayList, Arrays, List}
+import java.util.{ArrayList, List}
 
 import scala.collection.mutable.HashMap
 
@@ -31,7 +31,7 @@ import org.apache.spark.internal.{config, Logging}
 import org.apache.spark.internal.config.{RESCHEDULE_TRIGGER_RATIO, SITE_NUMBER, THRIFT_SERVER_HOST}
 import org.apache.spark.rpc.{IsolatedRpcEndpoint, RpcEnv}
 import org.apache.spark.scheduler.EarlyScheduleTracker.ENDPOINT_NAME
-import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.{ModelReady, SiteBandwidthUpdate}
+import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.{LoadReport, ModelReady, SiteBandwidthUpdate}
 import org.apache.spark.scheduler.rpc.{gurobiService, Request, Response}
 import org.apache.spark.util.Utils
 
@@ -44,9 +44,23 @@ private[spark] class EarlyScheduleTracker(sc: SparkContext, conf: SparkConf, rpc
   var transport: TTransport = new TSocket(conf.get(THRIFT_SERVER_HOST), 7777)  // Python Server
   val thriftClient = buildThriftClient()
 
-  val siteLocation = Map(
-    "0" -> Seq("10.176.24.55", "10.176.24.56", "10.176.24.57").map(TaskLocation(_)),
-    "1" -> Seq("10.176.24.58", "10.176.24.59", "10.176.24.60").map(TaskLocation(_))
+  private val siteLocation = HashMap(
+//    "0" -> Seq("10.176.24.55", "10.176.24.56", "10.176.24.57").map(TaskLocation(_)),
+//    "1" -> Seq("10.176.24.58", "10.176.24.59", "10.176.24.60").map(TaskLocation(_))
+    "0" -> Seq("10.176.24.55"),
+    "1" -> Seq("10.176.24.56"),
+    "2" -> Seq("10.176.24.57")
+  )
+  private val hostSite: HashMap[String, String] = HashMap(
+    //      "10.176.24.55" -> "0",
+    //      "10.176.24.56" -> "0",
+    //      "10.176.24.57" -> "0",
+    //      "10.176.24.58" -> "1",
+    //      "10.176.24.59" -> "1",
+    //      "10.176.24.60" -> "1"
+    "10.176.24.55" -> "0",
+    "10.176.24.56" -> "1",
+    "10.176.24.57" -> "2",
   )
 
   val shuffleManager = SparkEnv.get.shuffleManager
@@ -66,7 +80,11 @@ private[spark] class EarlyScheduleTracker(sc: SparkContext, conf: SparkConf, rpc
 
   private val bandwidthMatrix = initBandwidthMatrix()
 
-  private val siteLoad: List[java.lang.Double] = new ArrayList[java.lang.Double]()
+  private val loadWeight = (0.4, 0.3, 0.2, 0.1)
+
+  // (hostUsageMap, siteLoadMap)
+  type LoadStatus = (HashMap[String, Double], HashMap[String, Double])
+  private val loadStatus: LoadStatus = initLoadStatus()
 
   private val rescheduleTriggerRatio = conf.get(RESCHEDULE_TRIGGER_RATIO)
 
@@ -75,8 +93,15 @@ private[spark] class EarlyScheduleTracker(sc: SparkContext, conf: SparkConf, rpc
 
   private val earlyScheduleDecision = new HashMap[String, Int]
 
-  def getEarlyScheduleDecision(stageId: String, taskId: Int): String = {
+  def getEarlyScheduleDecision(stageId: Int, taskId: Int): String = {
     val scheduleSiteIdx = earlyScheduleDecision.getOrElse(s"${stageId}_${taskId}", -1)
+//    if (stageId == 2) {
+//      "0"
+//    } else if (stageId == 1) {
+//      "1"
+//    } else {
+//      null
+//    }
     if (scheduleSiteIdx != -1) {
       String.valueOf(scheduleSiteIdx)
     } else {
@@ -92,10 +117,22 @@ private[spark] class EarlyScheduleTracker(sc: SparkContext, conf: SparkConf, rpc
     client
   }
 
+  private def initLoadStatus(): LoadStatus = {
+    val hostUsageMap: HashMap[String, Double] = HashMap()
+    val siteLoadMap: HashMap[String, Double] = HashMap()
+    hostSite.keys.foreach(hostUsageMap.put(_, 0))
+    siteLocation.keys.foreach(siteLoadMap.put(_, 0))
+
+    new LoadStatus(hostUsageMap, siteLoadMap)
+  }
+
   private def initBandwidthMatrix(): List[List[Integer]] = {
     val bandwidthMatrix: List[List[Integer]] = new ArrayList()
     for (i <- 0 until numSites) {
-      val siteBandwidth = Arrays.asList(new Integer(numSites))
+      val siteBandwidth: List[Integer] = new ArrayList()
+      for (j <- 0 until numSites) {
+        siteBandwidth.add(0)
+      }
       siteBandwidth.set(i, 10001)
       bandwidthMatrix.add(siteBandwidth)
     }
@@ -107,10 +144,10 @@ private[spark] class EarlyScheduleTracker(sc: SparkContext, conf: SparkConf, rpc
     transport.close()
   }
 
-  def makeScheduleDecision(mapStageId: String, reduceStageId: String,
+  def makeScheduleDecision(mapStageId: Int, reduceStageId: Int,
                            numMappers: Int, numReducers: Int, shuffleId: Int): Unit = {
-    val (decisions, time, linkTime, u) = makeDecision(mapStageId, reduceStageId,
-                                                      numMappers, numReducers)
+    val (decisions, time, linkTime, u) = makeInternalDecision(mapStageId, reduceStageId,
+                                                              numMappers, numReducers)
 
     for (idx <- 0 until numReducers) {
       val scheduleUniqueId = s"${reduceStageId}_${idx}"
@@ -127,7 +164,7 @@ private[spark] class EarlyScheduleTracker(sc: SparkContext, conf: SparkConf, rpc
    * make network-aware task placement decision
    * @return
    */
-  private def makeDecision(mapStageId: String, reduceStageId: String,
+  private def makeInternalDecision(mapStageId: Int, reduceStageId: Int,
                            numMappers: Int, numReducers: Int)
                             : (List[Integer], Double, List[List[java.lang.Double]], Double) = {
     // S*M
@@ -135,10 +172,11 @@ private[spark] class EarlyScheduleTracker(sc: SparkContext, conf: SparkConf, rpc
     // S*R*M
     val outputSize = m2(mapStageId, reduceStageId)
     val request = new Request(numMappers, numReducers, numSites, 0.5)
-    request.setBandwidth(bandwidthMatrix)
-    request.setFinishTime(finishTime)
-    request.setOutputSize(outputSize)
-    request.setSiteLoad(siteLoad)
+    // NOTE: Comment the following parameters for Test
+//    request.setBandwidth(bandwidthMatrix)
+//    request.setFinishTime(finishTime)
+//    request.setOutputSize(outputSize)
+//    request.setSiteLoad(siteLoad)
     val response: Response = thriftClient.gurobi(request)
 
     val decisions = response.decision
@@ -205,7 +243,7 @@ private[spark] class EarlyScheduleTracker(sc: SparkContext, conf: SparkConf, rpc
    * @param mapStageId
    * @return size: [S*M]
    */
-  private def m1(mapStageId: String): List[List[Integer]] = {
+  private def m1(mapStageId: Int): List[List[Integer]] = {
     null
   }
 
@@ -214,7 +252,7 @@ private[spark] class EarlyScheduleTracker(sc: SparkContext, conf: SparkConf, rpc
    * @param mapStageId
    * @return size: [S*R*M]
    */
-  private def m2(mapStageId: String, reduceStageId: String): List[List[List[Integer]]] = {
+  private def m2(mapStageId: Int, reduceStageId: Int): List[List[List[Integer]]] = {
     null
   }
 
@@ -237,6 +275,16 @@ private[spark] class EarlyScheduleTracker(sc: SparkContext, conf: SparkConf, rpc
           // TODO: Dynamic bandwidth handler, such a mess now!
         }
 
+      case LoadReport(host, uCPU, uMem, uBandwidth, uDisk) =>
+        val site = hostSite(host)
+        val numSiteHosts: Int = siteLocation(site).size
+        val usage: Double = loadWeight._1 * uCPU + loadWeight._2 * uMem +
+                    loadWeight._3 * uBandwidth + loadWeight._4 * uDisk
+        val lastUsage: Double = loadStatus._1(host)
+        val newSiteLoad = loadStatus._2(site) + (usage - lastUsage) / numSiteHosts
+        loadStatus._1(host) = usage
+        loadStatus._2(site) = newSiteLoad
+        print(loadStatus)
     }
   }
 }
