@@ -35,8 +35,8 @@ import org.apache.spark.resource.{ExecutorResourceRequests, ResourceProfile, Tas
 import org.apache.spark.resource.ResourceUtils._
 import org.apache.spark.resource.TestResourceIDs._
 import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.LoadReport
-import org.apache.spark.scheduler.rpc.{gurobiService, Request, Response}
-import org.apache.spark.util.{Clock, ManualClock}
+import org.apache.spark.scheduler.rpc.{gurobiService, Request1, Response1}
+import org.apache.spark.util.{Clock, ManualClock, Utils}
 
 import org.apache.thrift.protocol.TBinaryProtocol
 import org.apache.thrift.transport.{TSocket, TTransport}
@@ -109,7 +109,8 @@ class TaskSchedulerImplSuite extends SparkFunSuite with LocalSparkContext with B
     sc = new SparkContext(conf)
     taskScheduler =
       new TaskSchedulerImpl(sc, sc.conf.get(config.TASK_MAX_FAILURES)) {
-        override def createTaskSetManager(taskSet: TaskSet, maxFailures: Int): TaskSetManager = {
+        override def createTaskSetManager(taskSet: TaskSet, maxFailures: Int,
+                                          parentStageId: Int): TaskSetManager = {
           val tsm = super.createTaskSetManager(taskSet, maxFailures)
           // we need to create a spied tsm just so we can set the TaskSetExcludelist
           val tsmSpy = spy(tsm)
@@ -196,21 +197,25 @@ class TaskSchedulerImplSuite extends SparkFunSuite with LocalSparkContext with B
     assert(!failedTaskSet)
   }
 
+  ignore("print host") {
+    print(Utils.localCanonicalHostName())
+  }
+
   ignore("Schedule thrift RPC") {
     val transport: TTransport = new TSocket("127.0.0.1", 7777)  // Python Server
     transport.open()
     val protocol = new TBinaryProtocol(transport)
     val client = new gurobiService.Client(protocol)
-    val request = new Request(50, 50, 5, 0.4)
+    val request = new Request1(50, 50, 3, 0.4)
     request.setBandwidth(null)
     request.setFinishTime(null)
     request.setOutputSize(null)
     request.setSiteLoad(null)
-    val response: Response = client.gurobi(request)
-    print(response.decision)
-    print(response.maxTime)
-    print(response.linkTime)
-    print(response.u)
+    val response: Response1 = client.gurobi(request)
+    println(response.decision)
+    println(response.maxTime)
+    println(response.linkTime)
+    println(response.u)
   }
 
   test("early schedule tracker load status report") {

@@ -1733,6 +1733,11 @@ package object config {
       .stringConf
       .createWithDefault("10.176.24.55")
 
+  private[spark] val EARLY_SCHEDULE_ENABLE = ConfigBuilder("spark.early.schedule.enable")
+    .doc("Whether to enable early-schedule")
+    .version("3.5.0")
+    .booleanConf.createWithDefault(false)
+
   private[spark] val REDUCER_MAX_SIZE_IN_FLIGHT = ConfigBuilder("spark.reducer.maxSizeInFlight")
     .doc("Maximum size of map outputs to fetch simultaneously from each reduce task, " +
       "in MiB unless otherwise specified. Since each output requires us to create a " +

@@ -51,6 +51,9 @@ private[spark] trait TaskScheduler {
   // Disconnect from the cluster.
   def stop(): Unit
 
+  // add parentStageId for early-schedule
+  def submitTasks(parentStageId: Int, taskSet: TaskSet): Unit = {}
+
   // Submit a sequence of tasks to run.
   def submitTasks(taskSet: TaskSet): Unit
 

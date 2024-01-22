@@ -127,9 +127,13 @@ class CoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, val rpcEnv: Rp
         "10.176.24.55" -> "0",
         "10.176.24.56" -> "1",
         "10.176.24.57" -> "2",
+        "10.176.24.53" -> "3",
+        "10.176.24.54" -> "4",
         "analysis-5" -> "0",
         "analysis-6" -> "1",
         "analysis-7" -> "2",
+        "analysis-3" -> "3",
+        "analysis-4" -> "4",
     )
 
     override val rpcEnv: RpcEnv = CoarseGrainedSchedulerBackend.this.rpcEnv
@@ -323,7 +327,8 @@ class CoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, val rpcEnv: Rp
                 (rName, rInfo.availableAddrs.toBuffer)
               },
               executorData.resourceProfileId,
-              hostSite.getOrElse(executorData.executorHost, null))
+              hostSite.getOrElse(executorData.executorHost, null),
+              executorData.totalCores)
         }.toIndexedSeq
         scheduler.resourceOffers(workOffers, true)
       }
@@ -355,7 +360,8 @@ class CoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, val rpcEnv: Rp
                 (rName, rInfo.availableAddrs.toBuffer)
               },
               executorData.resourceProfileId,
-              hostSite.getOrElse(executorData.executorHost, null)))
+              hostSite.getOrElse(executorData.executorHost, null),
+              executorData.totalCores))
           scheduler.resourceOffers(workOffers, false)
         } else {
           Seq.empty

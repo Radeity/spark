@@ -57,7 +57,8 @@ private[spark] class TaskSetManager(
     val maxTaskFailures: Int,
     healthTracker: Option[HealthTracker] = None,
     clock: Clock = new SystemClock(),
-    earlyScheduleTracker: Option[EarlyScheduleTracker] = None) extends Schedulable with Logging {
+    earlyScheduleTracker: Option[EarlyScheduleTracker] = None,
+    val parentStageId: Int = -1) extends Schedulable with Logging {
 
   private val conf = sched.sc.conf
 
@@ -249,8 +250,8 @@ private[spark] class TaskSetManager(
     val pendingTaskSetToAddTo = if (speculatable) pendingSpeculatableTasks else pendingTasks
 
     val earlyScheduleSite = if (earlyScheduleTracker == None) null else
-                              earlyScheduleTracker.get.getEarlyScheduleDecision(taskSet.stageId, index)
-    if (taskSet.stageId != 0 && earlyScheduleSite != null) {
+                              earlyScheduleTracker.get.getEarlyScheduleDecision(parentStageId, index)
+    if (parentStageId != -1 && earlyScheduleSite != null) {
       pendingTaskSetToAddTo.forSite.getOrElseUpdate(earlyScheduleSite, new ArrayBuffer) += index
     } else {
       logInfo(s"No early schedule results, fall back to Vanilla Spark")

@@ -92,8 +92,6 @@ private[spark] class TaskSchedulerImpl(
   // because ExecutorAllocationClient is created after this TaskSchedulerImpl.
   private[scheduler] lazy val healthTrackerOpt = maybeCreateHealthTracker(sc)
 
-  private val earlyScheduleTrackerOpt = Some(sc.earlyScheduleTracker)
-
   val conf = sc.conf
 
   // How often to check for speculative tasks
@@ -233,12 +231,20 @@ private[spark] class TaskSchedulerImpl(
     waitBackendReady()
   }
 
+  override def submitTasks(parentStageId: Int, taskSet: TaskSet): Unit = {
+    submitTasksInternal(parentStageId, taskSet)
+  }
+
   override def submitTasks(taskSet: TaskSet): Unit = {
+    submitTasksInternal(-1, taskSet)
+  }
+
+  private def submitTasksInternal(parentStageId: Int, taskSet: TaskSet): Unit = {
     val tasks = taskSet.tasks
     logInfo("Adding task set " + taskSet.id + " with " + tasks.length + " tasks "
       + "resource profile " + taskSet.resourceProfileId)
     this.synchronized {
-      val manager = createTaskSetManager(taskSet, maxTaskFailures)
+      val manager = createTaskSetManager(taskSet, maxTaskFailures, parentStageId)
       val stage = taskSet.stageId
       val stageTaskSets =
         taskSetsByStageIdAndAttempt.getOrElseUpdate(stage, new HashMap[Int, TaskSetManager])
@@ -281,7 +287,15 @@ private[spark] class TaskSchedulerImpl(
       taskSet: TaskSet,
       maxTaskFailures: Int): TaskSetManager = {
     new TaskSetManager(this, taskSet, maxTaskFailures, healthTrackerOpt, clock,
-      earlyScheduleTrackerOpt)
+      Option(sc.earlyScheduleTracker))
+  }
+
+  private[scheduler] def createTaskSetManager(
+      taskSet: TaskSet,
+      maxTaskFailures: Int,
+      parentStageId: Int = -1): TaskSetManager = {
+    new TaskSetManager(this, taskSet, maxTaskFailures, healthTrackerOpt, clock,
+      Option(sc.earlyScheduleTracker), parentStageId)
   }
 
   override def cancelTasks(stageId: Int, interruptThread: Boolean): Unit = synchronized {
@@ -511,6 +525,7 @@ private[spark] class TaskSchedulerImpl(
       }
       if (!executorIdToRunningTaskIds.contains(o.executorId)) {
         hostToExecutors(o.host) += o.executorId
+        sc.earlyScheduleTracker.updateSiteSlots(o.host, o.executorId, o.allCores)
         executorAdded(o.executorId, o.host)
         executorIdToHost(o.executorId) = o.host
         executorIdToRunningTaskIds(o.executorId) = HashSet[Long]()
@@ -1013,6 +1028,7 @@ private[spark] class TaskSchedulerImpl(
     execs -= executorId
     if (execs.isEmpty) {
       hostToExecutors -= host
+      sc.earlyScheduleTracker.updateSiteSlots(host, executorId, 0)
       for (rack <- getRackForHost(host); hosts <- hostsByRack.get(rack)) {
         hosts -= host
         if (hosts.isEmpty) {

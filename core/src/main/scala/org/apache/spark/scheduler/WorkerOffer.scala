@@ -34,4 +34,5 @@ case class WorkerOffer(
     address: Option[String] = None,
     resources: Map[String, Buffer[String]] = Map.empty,
     resourceProfileId: Int = ResourceProfile.DEFAULT_RESOURCE_PROFILE_ID,
-    site: String = null)
+    site: String = null,
+    allCores: Int = 0)
