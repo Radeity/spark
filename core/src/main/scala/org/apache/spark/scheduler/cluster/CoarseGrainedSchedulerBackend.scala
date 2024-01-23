@@ -898,6 +898,16 @@ class CoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, val rpcEnv: Rp
    */
   protected def createTokenManager(): Option[HadoopDelegationTokenManager] = None
 
+  override def askRecentLoad(executorId: String): java.lang.Double = {
+    executorDataMap.get(executorId) match {
+      case Some(executorInfo) =>
+        executorInfo.executorEndpoint.askSync[java.lang.Double](RecentLoad)
+      case None =>
+        logWarning(s"Ignored ask recent load request for unknown executor with ID $executorId")
+        1.0
+    }
+  }
+
   /**
    * Called when a new set of delegation tokens is sent to the driver. Child classes can override
    * this method but should always call this implementation, which handles token distribution to

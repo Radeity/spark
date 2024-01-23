@@ -589,11 +589,7 @@ class SparkContext(config: SparkConf) extends Logging {
     _conf.set("spark.app.id", _applicationId)
 
     // Initialize EarlyScheduleTracker
-    if (_conf.get(EARLY_SCHEDULE_ENABLE)) {
-      _earlySchedulerTracker = new EarlyScheduleTracker(this, conf, env.rpcEnv, _applicationId)
-    } else {
-      _earlySchedulerTracker = null
-    }
+    _earlySchedulerTracker = new EarlyScheduleTracker(this, conf, env.rpcEnv, _applicationId)
 
     if (_conf.get(UI_REVERSE_PROXY)) {
       val proxyUrl = _conf.get(UI_REVERSE_PROXY_URL.key, "").stripSuffix("/") +

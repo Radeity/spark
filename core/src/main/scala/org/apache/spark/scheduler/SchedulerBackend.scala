@@ -105,4 +105,13 @@ private[spark] trait SchedulerBackend {
       numPartitions: Int,
       resourceProfileId: Int): Seq[BlockManagerId] = Nil
 
+  /**
+   * Only called by EarlySchedulerTracker
+   * @param host
+   * @return load
+   */
+  def askRecentLoad(host: String): java.lang.Double = {
+    1.0
+  }
+
 }

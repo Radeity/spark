@@ -226,6 +226,11 @@ private[spark] class CoarseGrainedExecutorBackend(
           decommissioned = false
       }
       context.reply(decommissioned)
+
+    case RecentLoad =>
+      new Thread(() => {
+        context.reply(SystemInfoTool.getGeneralResourceUsage())
+      }).start()
   }
 
   override def onDisconnected(remoteAddress: RpcAddress): Unit = {

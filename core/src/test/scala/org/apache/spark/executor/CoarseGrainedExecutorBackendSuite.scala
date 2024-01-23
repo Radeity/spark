@@ -17,10 +17,13 @@
 
 package org.apache.spark.executor
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder
+
 import java.io.File
 import java.net.URL
 import java.nio.ByteBuffer
 import java.util.Properties
+import java.util.concurrent.{Executors, ThreadPoolExecutor, TimeUnit}
 
 import scala.collection.mutable
 import scala.concurrent.duration._
@@ -41,7 +44,7 @@ import org.apache.spark.rpc.RpcEnv
 import org.apache.spark.scheduler.TaskDescription
 import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.LaunchTask
 import org.apache.spark.serializer.JavaSerializer
-import org.apache.spark.util.{SerializableBuffer, Utils}
+import org.apache.spark.util.{SerializableBuffer, UninterruptibleThread, Utils}
 
 class CoarseGrainedExecutorBackendSuite extends SparkFunSuite
     with LocalSparkContext with MockitoSugar {
@@ -89,6 +92,31 @@ class CoarseGrainedExecutorBackendSuite extends SparkFunSuite
       assert(parsedResources.get(GPU).get.name === GPU)
       assert(parsedResources.get(GPU).get.addresses.sameElements(Array("0", "1")))
     }
+  }
+
+  ignore("test thread pool") {
+    val threadPool = {
+      val threadFactory = new ThreadFactoryBuilder()
+        .setDaemon(true)
+        .setNameFormat("UT-%d")
+        .setThreadFactory((r: Runnable) => new UninterruptibleThread(r, "unused"))
+        .build()
+      Executors.newCachedThreadPool(threadFactory).asInstanceOf[ThreadPoolExecutor]
+    }
+    threadPool.execute(() => {
+      Thread.sleep(2000)
+      print("done sleep")
+    })
+    print("parent shutdown\n")
+    if (!threadPool.awaitTermination(3, TimeUnit.SECONDS)) {
+      threadPool.shutdownNow()
+    }
+    threadPool.shutdown()
+  }
+
+  ignore("get resource usage") {
+    val U = SystemInfoTool.getGeneralResourceUsage()
+    assert(U > 0.1)
   }
 
   test("parsing multiple resources resource profile") {

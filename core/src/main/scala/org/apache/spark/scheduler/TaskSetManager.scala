@@ -251,7 +251,7 @@ private[spark] class TaskSetManager(
 
     val earlyScheduleSite = if (earlyScheduleTracker == None) null else
                               earlyScheduleTracker.get.getEarlyScheduleDecision(parentStageId, index)
-    if (parentStageId != -1 && earlyScheduleSite != null) {
+    if (earlyScheduleSite != null) {
       pendingTaskSetToAddTo.forSite.getOrElseUpdate(earlyScheduleSite, new ArrayBuffer) += index
     } else {
       logInfo(s"No early schedule results, fall back to Vanilla Spark")

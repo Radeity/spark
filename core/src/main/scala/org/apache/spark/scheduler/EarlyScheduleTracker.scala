@@ -17,29 +17,33 @@
 
 package org.apache.spark.scheduler
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder
+
 import java.util.{ArrayList, List}
-
-import scala.collection.mutable.HashMap
-
+import java.util.concurrent.{Executors, Future, ThreadPoolExecutor}
 import com.gurobi.gurobi.{GRB, GRBEnv, GRBLinExpr, GRBModel, GRBVar}
 
+import scala.collection.mutable.{HashMap, HashSet}
 import org.apache.thrift.TProcessor
 import org.apache.thrift.protocol.TBinaryProtocol
 import org.apache.thrift.server.{TServer, TSimpleServer}
 import org.apache.thrift.transport.{TServerSocket, TSocket, TTransport}
 
 import org.apache.spark._
-import org.apache.spark.internal.{config, Logging}
-import org.apache.spark.internal.config.{RESCHEDULE_TRIGGER_RATIO, SITE_NUMBER, THRIFT_SERVER_HOST}
+import org.apache.spark.internal.{Logging, config}
+import org.apache.spark.internal.config.{EARLY_SCHEDULE_ENABLE, RESCHEDULE_TRIGGER_RATIO, SITE_NUMBER, THRIFT_SERVER_HOST}
 import org.apache.spark.rpc.{IsolatedRpcEndpoint, RpcEnv}
 import org.apache.spark.scheduler.EarlyScheduleTracker.ENDPOINT_NAME
 import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.{LoadReport, ModelReady, SiteBandwidthUpdate}
-import org.apache.spark.scheduler.rpc.{gurobiService, Request1, Request3, Request4, Response1, ServiceHandler}
-import org.apache.spark.util.Utils
+import org.apache.spark.scheduler.rpc.{Request1, Request3, Request4, Response1, ServiceHandler, gurobiService}
+import org.apache.spark.util.{UninterruptibleThread, Utils}
+
 
 private[spark] class EarlyScheduleTracker(sc: SparkContext, conf: SparkConf, rpcEnv: RpcEnv,
                                           appUniqueId: String)
   extends Logging {
+
+  val enableEarlySchedule = conf.get(EARLY_SCHEDULE_ENABLE)
 
   val earlyScheduleTrackerEndpoint = rpcEnv.setupEndpoint(ENDPOINT_NAME,
                                                           new EarlySchedulerEndpoint())
@@ -50,15 +54,16 @@ private[spark] class EarlyScheduleTracker(sc: SparkContext, conf: SparkConf, rpc
 
   val siteSlots = new HashMap[String, Int]
   val executorCores = new HashMap[String, Int]
+  val hostToExecutors = new HashMap[String, HashSet[String]]
 
   private val siteLocation = HashMap(
 //    "0" -> Seq("10.176.24.55", "10.176.24.56", "10.176.24.57").map(TaskLocation(_)),
 //    "1" -> Seq("10.176.24.58", "10.176.24.59", "10.176.24.60").map(TaskLocation(_))
-    "0" -> Seq("10.176.24.55"),
-    "1" -> Seq("10.176.24.56"),
-    "2" -> Seq("10.176.24.57"),
-    "3" -> Seq("10.176.24.53"),
-    "4" -> Seq("10.176.24.54"),
+    "0" -> Seq("analysis-5"),
+    "1" -> Seq("analysis-6"),
+    "2" -> Seq("analysis-7"),
+    "3" -> Seq("analysis-3"),
+    "4" -> Seq("analysis-4"),
   )
   private val hostSite: HashMap[String, String] = HashMap(
     //      "10.176.24.55" -> "0",
@@ -106,8 +111,17 @@ private[spark] class EarlyScheduleTracker(sc: SparkContext, conf: SparkConf, rpc
 
   private val earlyScheduleDecision = new HashMap[String, Int]
 
+  private val threadPool = {
+    val threadFactory = new ThreadFactoryBuilder()
+      .setDaemon(true)
+      .setNameFormat("Early-Scheduler-Ask-Load-%d")
+      .setThreadFactory((r: Runnable) => new UninterruptibleThread(r, "unused"))
+      .build()
+    Executors.newCachedThreadPool(threadFactory).asInstanceOf[ThreadPoolExecutor]
+  }
+
   def getEarlyScheduleDecision(stageId: Int, taskId: Int): String = {
-    if (stageId == -1) {
+    if (stageId == -1 || !enableEarlySchedule) {
       return null
     }
 
@@ -137,6 +151,9 @@ private[spark] class EarlyScheduleTracker(sc: SparkContext, conf: SparkConf, rpc
   }
 
   private def launchThriftServer(): TServer = {
+    if (!enableEarlySchedule) {
+      return null
+    }
     val tprocessor: TProcessor = new gurobiService.Processor(new ServiceHandler(this))
     val serverTransport: TServerSocket = new TServerSocket(9898)
     val server: TServer = new TSimpleServer(new TServer.Args(serverTransport).processor(tprocessor))
@@ -147,6 +164,9 @@ private[spark] class EarlyScheduleTracker(sc: SparkContext, conf: SparkConf, rpc
   }
 
   private def buildThriftClient(): gurobiService.Client = {
+    if (!enableEarlySchedule) {
+      return null
+    }
     transport.open()
     val protocol = new TBinaryProtocol(transport)
     val client = new gurobiService.Client(protocol)
@@ -178,17 +198,31 @@ private[spark] class EarlyScheduleTracker(sc: SparkContext, conf: SparkConf, rpc
   }
 
   def updateSiteSlots(host: String, executorId: String, allCores: Int): Unit = {
+    if (!hostToExecutors.contains(host)) {
+      hostToExecutors(host) = new HashSet[String]()
+    }
+    hostToExecutors(host).add(executorId)
+
     var newSlots = allCores
     if (executorCores.contains(executorId)) {
       newSlots = allCores - executorCores(executorId)
     }
     executorCores(executorId) = allCores
-    val site: String = hostSite.getOrElse(host, -1)
+    val site: String = hostSite.getOrElse(host, "-1")
     val currentSlots = siteSlots.getOrElse(site, 0)
-    siteSlots(host) = currentSlots + newSlots
+    siteSlots(hostSite(host)) = currentSlots + newSlots
+
+    // remove executor
+    if (allCores == 0) {
+      hostToExecutors(host).remove(executorId)
+      executorCores.remove(executorId)
+    }
   }
 
   def stop(): Unit = {
+    if (!enableEarlySchedule) {
+      return
+    }
     thriftClient.deregisterApplication(new Request4(appUniqueId))
     transport.close()
     server.stop()
@@ -205,7 +239,6 @@ private[spark] class EarlyScheduleTracker(sc: SparkContext, conf: SparkConf, rpc
     logInfo(s"current decision map: ${earlyScheduleDecision}")
     if (updatePartitionSiteMethod != null) {
       val decisionArr: Array[Integer] = decisions.toArray(Array.ofDim[Integer](decisions.size))
-      logInfo(s"decision array ${decisionArr}")
       updatePartitionSiteMethod.invoke(shuffleManager, appUniqueId,
                                        new Integer(shuffleId), decisionArr)
     }
@@ -217,19 +250,55 @@ private[spark] class EarlyScheduleTracker(sc: SparkContext, conf: SparkConf, rpc
    */
   private def makeInternalDecision(mapStageId: Int, numMappers: Int, numReducers: Int)
                             : (List[Integer], Double, List[List[java.lang.Double]], Double) = {
+    // NOTE: replace with CBO
     // S*M
-    val finishTime = m1(mapStageId)
+//    val finishTime = m1(mapStageId)
     // S*R*M
 //    val outputSize = m2(mapStageId, reduceStageId)
     // val responseM2 = thriftClient.m2(new Request7(appUniqueId, mapStageId))
     // val outputSize = responseM2.outputSize
+
+    val siteLoads = new Array[Double](siteSlots.size)
+    val futureMap = new HashMap[String, Future[_]]
+    siteSlots.foreach(item => {
+      val site = item._1
+      val execSet = hostToExecutors(siteLocation(site).head)
+      val it = execSet.iterator
+      val executorId = it.next()
+      val future: Future[_] = threadPool.submit(new Runnable {
+        override def run(): Unit = {
+          val siteLoad = sc.schedulerBackend.askRecentLoad(executorId)
+          siteLoads(Integer.parseInt(site)) = siteLoad
+          logInfo(s"[Early-Schedule] Site $site Load: $siteLoad")
+        }
+      })
+      futureMap.put(site, future)
+    })
+    futureMap.foreach(item => {
+      item._2.get()
+    })
+
+    var loadMin: Double = 10
+    var loadMax: Double = -1
+    for (i <- 0 until siteSlots.size) {
+      loadMin = Math.min(loadMin, siteLoads(i))
+      loadMax = Math.max(loadMax, siteLoads(i))
+    }
+    val capacity = new Array[java.lang.Double](siteSlots.size)
+    for (i <- 0 until siteSlots.size) {
+      val c = siteSlots(String.valueOf(i)) /
+        (0.5 + 0.5 * (siteLoads(i) - loadMin) / (loadMax - loadMin))
+      capacity(i) = c
+      logInfo(s"[Early-Schedule] Site $i , slot:${siteSlots(String.valueOf(i))}, Capacitity:$c")
+    }
 
     val request = new Request1(numMappers, numReducers, numSites, 0.5)
     // NOTE: Comment the following parameters for Test
 //    request.setBandwidth(bandwidthMatrix)
 //    request.setFinishTime(finishTime)
 //    request.setOutputSize(outputSize)
-//    request.setSiteLoad(siteLoad)
+    import scala.collection.JavaConverters._
+    request.setSiteLoad(capacity.toList.asJava)
     val response: Response1 = thriftClient.gurobi(request)
 
     val decisions = response.decision

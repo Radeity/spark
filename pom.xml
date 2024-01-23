@@ -2905,6 +2905,9 @@
           <artifactSet>
             <includes>
               <include>org.spark-project.spark:unused</include>
+              <include>com.github.oshi:oshi-core</include>
+              <include>net.java.dev.jna:jna</include>
+              <include>net.java.dev.jna:jna-platform</include>
               <include>org.eclipse.jetty:jetty-io</include>
               <include>org.eclipse.jetty:jetty-http</include>
               <include>org.eclipse.jetty:jetty-proxy</include>
