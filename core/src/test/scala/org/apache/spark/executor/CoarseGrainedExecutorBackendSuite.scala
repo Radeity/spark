@@ -114,9 +114,16 @@ class CoarseGrainedExecutorBackendSuite extends SparkFunSuite
     threadPool.shutdown()
   }
 
-  ignore("get resource usage") {
-    val U = SystemInfoTool.getGeneralResourceUsage()
-    assert(U > 0.1)
+  test("get resource usage") {
+
+    var time = 100
+    while(time > 0) {
+      val U = SystemInfoTool.getGeneralResourceUsage()
+      println(U)
+      time -= 1
+    }
+
+//    assert(U > 0.1)
   }
 
   test("parsing multiple resources resource profile") {

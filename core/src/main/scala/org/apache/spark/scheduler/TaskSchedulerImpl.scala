@@ -401,12 +401,6 @@ private[spark] class TaskSchedulerImpl(
       val execId = shuffledOffers(i).executorId
       val host = shuffledOffers(i).host
       val site = shuffledOffers(i).site
-//      var site = "0"
-//      if (shuffledOffers(i).executorId.equals("exec1")) {
-//        site = "1"
-//      } else if (shuffledOffers(i).executorId.equals("exec3")) {
-//        site = "2"
-//      }
       val taskSetRpID = taskSet.taskSet.resourceProfileId
       // make the resource profile id a hard requirement for now - ie only put tasksets
       // on executors where resource profile exactly matches.

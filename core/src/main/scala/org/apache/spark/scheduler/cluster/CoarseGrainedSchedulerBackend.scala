@@ -128,12 +128,12 @@ class CoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, val rpcEnv: Rp
         "10.176.24.56" -> "1",
         "10.176.24.57" -> "2",
         "10.176.24.53" -> "3",
-        "10.176.24.54" -> "4",
+        "10.176.24.60" -> "4",
         "analysis-5" -> "0",
         "analysis-6" -> "1",
         "analysis-7" -> "2",
         "analysis-3" -> "3",
-        "analysis-4" -> "4",
+        "Slave2" -> "4",
     )
 
     override val rpcEnv: RpcEnv = CoarseGrainedSchedulerBackend.this.rpcEnv

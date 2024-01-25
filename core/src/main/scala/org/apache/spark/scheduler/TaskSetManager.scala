@@ -203,6 +203,14 @@ private[spark] class TaskSetManager(
       for (i <- (0 until numTasks).reverse) {
         addPendingTask(i, resolveRacks = false)
       }
+      if (!pendingTasks.forSite.isEmpty) {
+        earlyScheduleTracker.get.syncTaskAssignedInfo(taskSet.stageId, pendingTasks.forSite,
+                                                      numTasks, true)
+      } else {
+        earlyScheduleTracker.get.syncTaskAssignedInfo(taskSet.stageId, pendingTasks.forHost,
+                                                      numTasks, false)
+      }
+
       // Resolve the rack for each host. This can be slow, so de-dupe the list of hosts,
       // and assign the rack to all relevant task indices.
       val (hosts, indicesForHosts) = pendingTasks.forHost.toSeq.unzip
@@ -233,6 +241,7 @@ private[spark] class TaskSetManager(
   private val legacyLocalityWaitReset = conf.get(LEGACY_LOCALITY_WAIT_RESET)
   private var currentLocalityIndex = 0 // Index of our current locality level in validLocalityLevels
   private var lastLocalityWaitResetTime = clock.getTimeMillis()  // Time we last reset locality wait
+  private val siteNumber = conf.get(SITE_NUMBER)
 
   override def schedulableQueue: ConcurrentLinkedQueue[Schedulable] = null
 
@@ -257,6 +266,7 @@ private[spark] class TaskSetManager(
       logInfo(s"No early schedule results, fall back to Vanilla Spark")
       // TODO: Have to make schedule decision immediately and trigger cross-site data transfer
       // TODO-update: 如果上游的map task都结束，stageEnd 前就应该触发做决策和 re-direct，否则数据都落盘了后续不好拉取
+      logInfo(s"[TaskSetManager] task $index, pref: ${tasks(index).preferredLocations}")
       for (loc <- tasks(index).preferredLocations) {
         loc match {
           case e: ExecutorCacheTaskLocation =>
@@ -397,18 +407,20 @@ private[spark] class TaskSetManager(
       }
     }
 
-    if (TaskLocality.isAllowed(maxLocality, TaskLocality.RACK_LOCAL)) {
-      for {
-        rack <- sched.getRackForHost(host)
-        index <- dequeue(pendingTaskSetToUse.forRack.getOrElse(rack, ArrayBuffer()))
-      } {
-        return Some((index, TaskLocality.RACK_LOCAL, speculative))
+    if (siteNumber == 1) {
+      if (TaskLocality.isAllowed(maxLocality, TaskLocality.RACK_LOCAL)) {
+        for {
+          rack <- sched.getRackForHost(host)
+          index <- dequeue(pendingTaskSetToUse.forRack.getOrElse(rack, ArrayBuffer()))
+        } {
+          return Some((index, TaskLocality.RACK_LOCAL, speculative))
+        }
       }
-    }
 
-    if (TaskLocality.isAllowed(maxLocality, TaskLocality.ANY)) {
-      dequeue(pendingTaskSetToUse.all).foreach { index =>
-        return Some((index, TaskLocality.ANY, speculative))
+      if (TaskLocality.isAllowed(maxLocality, TaskLocality.ANY)) {
+        dequeue(pendingTaskSetToUse.all).foreach { index =>
+          return Some((index, TaskLocality.ANY, speculative))
+        }
       }
     }
     None
@@ -1151,6 +1163,14 @@ private[spark] class TaskSetManager(
     if (!pendingTasks.noPrefs.isEmpty) {
       levels += NO_PREF
     }
+
+//    if (siteNumber == 1) {
+//      if (!pendingTasks.forRack.isEmpty &&
+//        pendingTasks.forRack.keySet.exists(sched.hasHostAliveOnRack(_))) {
+//        levels += RACK_LOCAL
+//      }
+//      levels += ANY
+//    }
     if (!pendingTasks.forRack.isEmpty &&
         pendingTasks.forRack.keySet.exists(sched.hasHostAliveOnRack(_))) {
       levels += RACK_LOCAL

@@ -23,7 +23,7 @@ import java.util.{ArrayList, List}
 import java.util.concurrent.{Executors, Future, ThreadPoolExecutor}
 import com.gurobi.gurobi.{GRB, GRBEnv, GRBLinExpr, GRBModel, GRBVar}
 
-import scala.collection.mutable.{HashMap, HashSet}
+import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet}
 import org.apache.thrift.TProcessor
 import org.apache.thrift.protocol.TBinaryProtocol
 import org.apache.thrift.server.{TServer, TSimpleServer}
@@ -63,7 +63,7 @@ private[spark] class EarlyScheduleTracker(sc: SparkContext, conf: SparkConf, rpc
     "1" -> Seq("analysis-6"),
     "2" -> Seq("analysis-7"),
     "3" -> Seq("analysis-3"),
-    "4" -> Seq("analysis-4"),
+    "4" -> Seq("Slave2"),
   )
   private val hostSite: HashMap[String, String] = HashMap(
     //      "10.176.24.55" -> "0",
@@ -76,12 +76,12 @@ private[spark] class EarlyScheduleTracker(sc: SparkContext, conf: SparkConf, rpc
     "10.176.24.56" -> "1",
     "10.176.24.57" -> "2",
     "10.176.24.53" -> "3",
-    "10.176.24.54" -> "4",
+    "10.176.24.60" -> "4",
     "analysis-5" -> "0",
     "analysis-6" -> "1",
     "analysis-7" -> "2",
     "analysis-3" -> "3",
-    "analysis-4" -> "4",
+    "Slave2" -> "4",
   )
 
   val shuffleManager = SparkEnv.get.shuffleManager
@@ -110,6 +110,8 @@ private[spark] class EarlyScheduleTracker(sc: SparkContext, conf: SparkConf, rpc
   private val stageToM2 = new HashMap[String, Array[Double]]
 
   private val earlyScheduleDecision = new HashMap[String, Int]
+
+  private val siteStageTaskAssignedMap = new HashMap[Int, Array[Integer]]
 
   private val threadPool = {
     val threadFactory = new ThreadFactoryBuilder()
@@ -228,6 +230,20 @@ private[spark] class EarlyScheduleTracker(sc: SparkContext, conf: SparkConf, rpc
     server.stop()
   }
 
+  def syncTaskAssignedInfo(stageId: Int,
+                           taskAssignedMap: HashMap[String, ArrayBuffer[Int]],
+                           numTasks: Int,
+                           forSite: Boolean): Unit = {
+    val assigned: Array[Integer] = Array.fill(numTasks)(-1)
+    taskAssignedMap.foreach(item => {
+      val site = if (forSite) item._1 else hostSite(item._1)
+      for (index <- item._2) {
+        assigned(index) = Integer.parseInt(site)
+      }
+    })
+    siteStageTaskAssignedMap(stageId) = assigned
+  }
+
   def makeScheduleDecision(mapStageId: Int, numMappers: Int, numReducers: Int,
                            shuffleId: Int): Unit = {
     val (decisions, time, linkTime, u) = makeInternalDecision(mapStageId, numMappers, numReducers)
@@ -289,15 +305,16 @@ private[spark] class EarlyScheduleTracker(sc: SparkContext, conf: SparkConf, rpc
       val c = siteSlots(String.valueOf(i)) /
         (0.5 + 0.5 * (siteLoads(i) - loadMin) / (loadMax - loadMin))
       capacity(i) = c
-      logInfo(s"[Early-Schedule] Site $i , slot:${siteSlots(String.valueOf(i))}, Capacitity:$c")
+      logInfo(s"[Early-Schedule] Site $i, slot:${siteSlots(String.valueOf(i))}, Capacitity:$c")
     }
 
+    import scala.collection.JavaConverters._
     val request = new Request1(numMappers, numReducers, numSites, 0.5)
     // NOTE: Comment the following parameters for Test
 //    request.setBandwidth(bandwidthMatrix)
 //    request.setFinishTime(finishTime)
 //    request.setOutputSize(outputSize)
-    import scala.collection.JavaConverters._
+    request.setAssign(siteStageTaskAssignedMap(mapStageId).toList.asJava)
     request.setSiteLoad(capacity.toList.asJava)
     val response: Response1 = thriftClient.gurobi(request)
 
