@@ -927,13 +927,13 @@ public class Request2 implements org.apache.thrift.TBase<Request2, Request2._Fie
           case 8: // OUTPUT_SIZES
             if (schemeField.type == org.apache.thrift.protocol.TType.LIST) {
               {
-                org.apache.thrift.protocol.TList _list96 = iprot.readListBegin();
-                struct.outputSizes = new java.util.ArrayList<java.lang.Long>(_list96.size);
-                long _elem97;
-                for (int _i98 = 0; _i98 < _list96.size; ++_i98)
+                org.apache.thrift.protocol.TList _list104 = iprot.readListBegin();
+                struct.outputSizes = new java.util.ArrayList<java.lang.Long>(_list104.size);
+                long _elem105;
+                for (int _i106 = 0; _i106 < _list104.size; ++_i106)
                 {
-                  _elem97 = iprot.readI64();
-                  struct.outputSizes.add(_elem97);
+                  _elem105 = iprot.readI64();
+                  struct.outputSizes.add(_elem105);
                 }
                 iprot.readListEnd();
               }
@@ -1002,9 +1002,9 @@ public class Request2 implements org.apache.thrift.TBase<Request2, Request2._Fie
         oprot.writeFieldBegin(OUTPUT_SIZES_FIELD_DESC);
         {
           oprot.writeListBegin(new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.I64, struct.outputSizes.size()));
-          for (long _iter99 : struct.outputSizes)
+          for (long _iter107 : struct.outputSizes)
           {
-            oprot.writeI64(_iter99);
+            oprot.writeI64(_iter107);
           }
           oprot.writeListEnd();
         }
@@ -1036,9 +1036,9 @@ public class Request2 implements org.apache.thrift.TBase<Request2, Request2._Fie
       oprot.writeI64(struct.inputLines);
       {
         oprot.writeI32(struct.outputSizes.size());
-        for (long _iter100 : struct.outputSizes)
+        for (long _iter108 : struct.outputSizes)
         {
-          oprot.writeI64(_iter100);
+          oprot.writeI64(_iter108);
         }
       }
     }
@@ -1061,13 +1061,13 @@ public class Request2 implements org.apache.thrift.TBase<Request2, Request2._Fie
       struct.inputLines = iprot.readI64();
       struct.setInputLinesIsSet(true);
       {
-        org.apache.thrift.protocol.TList _list101 = iprot.readListBegin(org.apache.thrift.protocol.TType.I64);
-        struct.outputSizes = new java.util.ArrayList<java.lang.Long>(_list101.size);
-        long _elem102;
-        for (int _i103 = 0; _i103 < _list101.size; ++_i103)
+        org.apache.thrift.protocol.TList _list109 = iprot.readListBegin(org.apache.thrift.protocol.TType.I64);
+        struct.outputSizes = new java.util.ArrayList<java.lang.Long>(_list109.size);
+        long _elem110;
+        for (int _i111 = 0; _i111 < _list109.size; ++_i111)
         {
-          _elem102 = iprot.readI64();
-          struct.outputSizes.add(_elem102);
+          _elem110 = iprot.readI64();
+          struct.outputSizes.add(_elem110);
         }
       }
       struct.setOutputSizesIsSet(true);

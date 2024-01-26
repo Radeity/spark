@@ -20,6 +20,7 @@ public class Request1 implements org.apache.thrift.TBase<Request1, Request1._Fie
   private static final org.apache.thrift.protocol.TField SITE_LOAD_FIELD_DESC = new org.apache.thrift.protocol.TField("siteLoad", org.apache.thrift.protocol.TType.LIST, (short)7);
   private static final org.apache.thrift.protocol.TField ASSIGN_FIELD_DESC = new org.apache.thrift.protocol.TField("assign", org.apache.thrift.protocol.TType.LIST, (short)8);
   private static final org.apache.thrift.protocol.TField ALPHA_FIELD_DESC = new org.apache.thrift.protocol.TField("alpha", org.apache.thrift.protocol.TType.DOUBLE, (short)9);
+  private static final org.apache.thrift.protocol.TField SITE_SLOTS_FIELD_DESC = new org.apache.thrift.protocol.TField("siteSlots", org.apache.thrift.protocol.TType.LIST, (short)10);
 
   private static final org.apache.thrift.scheme.SchemeFactory STANDARD_SCHEME_FACTORY = new Request1StandardSchemeFactory();
   private static final org.apache.thrift.scheme.SchemeFactory TUPLE_SCHEME_FACTORY = new Request1TupleSchemeFactory();
@@ -33,6 +34,7 @@ public class Request1 implements org.apache.thrift.TBase<Request1, Request1._Fie
   public @org.apache.thrift.annotation.Nullable java.util.List<java.lang.Double> siteLoad; // optional
   public @org.apache.thrift.annotation.Nullable java.util.List<java.lang.Integer> assign; // optional
   public double alpha; // required
+  public @org.apache.thrift.annotation.Nullable java.util.List<java.lang.Integer> siteSlots; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -44,7 +46,8 @@ public class Request1 implements org.apache.thrift.TBase<Request1, Request1._Fie
     OUTPUT_SIZE((short)6, "outputSize"),
     SITE_LOAD((short)7, "siteLoad"),
     ASSIGN((short)8, "assign"),
-    ALPHA((short)9, "alpha");
+    ALPHA((short)9, "alpha"),
+    SITE_SLOTS((short)10, "siteSlots");
 
     private static final java.util.Map<java.lang.String, _Fields> byName = new java.util.HashMap<java.lang.String, _Fields>();
 
@@ -78,6 +81,8 @@ public class Request1 implements org.apache.thrift.TBase<Request1, Request1._Fie
           return ASSIGN;
         case 9: // ALPHA
           return ALPHA;
+        case 10: // SITE_SLOTS
+          return SITE_SLOTS;
         default:
           return null;
       }
@@ -155,6 +160,9 @@ public class Request1 implements org.apache.thrift.TBase<Request1, Request1._Fie
             new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32))));
     tmpMap.put(_Fields.ALPHA, new org.apache.thrift.meta_data.FieldMetaData("alpha", org.apache.thrift.TFieldRequirementType.REQUIRED, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.DOUBLE)));
+    tmpMap.put(_Fields.SITE_SLOTS, new org.apache.thrift.meta_data.FieldMetaData("siteSlots", org.apache.thrift.TFieldRequirementType.REQUIRED, 
+        new org.apache.thrift.meta_data.ListMetaData(org.apache.thrift.protocol.TType.LIST, 
+            new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32))));
     metaDataMap = java.util.Collections.unmodifiableMap(tmpMap);
     org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(Request1.class, metaDataMap);
   }
@@ -166,7 +174,8 @@ public class Request1 implements org.apache.thrift.TBase<Request1, Request1._Fie
     int numMappers,
     int numReducers,
     int numSites,
-    double alpha)
+    double alpha,
+    java.util.List<java.lang.Integer> siteSlots)
   {
     this();
     this.numMappers = numMappers;
@@ -177,6 +186,7 @@ public class Request1 implements org.apache.thrift.TBase<Request1, Request1._Fie
     setNumSitesIsSet(true);
     this.alpha = alpha;
     setAlphaIsSet(true);
+    this.siteSlots = siteSlots;
   }
 
   /**
@@ -224,6 +234,10 @@ public class Request1 implements org.apache.thrift.TBase<Request1, Request1._Fie
       this.assign = __this__assign;
     }
     this.alpha = other.alpha;
+    if (other.isSetSiteSlots()) {
+      java.util.List<java.lang.Integer> __this__siteSlots = new java.util.ArrayList<java.lang.Integer>(other.siteSlots);
+      this.siteSlots = __this__siteSlots;
+    }
   }
 
   public Request1 deepCopy() {
@@ -245,6 +259,7 @@ public class Request1 implements org.apache.thrift.TBase<Request1, Request1._Fie
     this.assign = null;
     setAlphaIsSet(false);
     this.alpha = 0.0;
+    this.siteSlots = null;
   }
 
   public int getNumMappers() {
@@ -544,6 +559,47 @@ public class Request1 implements org.apache.thrift.TBase<Request1, Request1._Fie
     __isset_bitfield = org.apache.thrift.EncodingUtils.setBit(__isset_bitfield, __ALPHA_ISSET_ID, value);
   }
 
+  public int getSiteSlotsSize() {
+    return (this.siteSlots == null) ? 0 : this.siteSlots.size();
+  }
+
+  @org.apache.thrift.annotation.Nullable
+  public java.util.Iterator<java.lang.Integer> getSiteSlotsIterator() {
+    return (this.siteSlots == null) ? null : this.siteSlots.iterator();
+  }
+
+  public void addToSiteSlots(int elem) {
+    if (this.siteSlots == null) {
+      this.siteSlots = new java.util.ArrayList<java.lang.Integer>();
+    }
+    this.siteSlots.add(elem);
+  }
+
+  @org.apache.thrift.annotation.Nullable
+  public java.util.List<java.lang.Integer> getSiteSlots() {
+    return this.siteSlots;
+  }
+
+  public Request1 setSiteSlots(@org.apache.thrift.annotation.Nullable java.util.List<java.lang.Integer> siteSlots) {
+    this.siteSlots = siteSlots;
+    return this;
+  }
+
+  public void unsetSiteSlots() {
+    this.siteSlots = null;
+  }
+
+  /** Returns true if field siteSlots is set (has been assigned a value) and false otherwise */
+  public boolean isSetSiteSlots() {
+    return this.siteSlots != null;
+  }
+
+  public void setSiteSlotsIsSet(boolean value) {
+    if (!value) {
+      this.siteSlots = null;
+    }
+  }
+
   public void setFieldValue(_Fields field, @org.apache.thrift.annotation.Nullable java.lang.Object value) {
     switch (field) {
     case NUM_MAPPERS:
@@ -618,6 +674,14 @@ public class Request1 implements org.apache.thrift.TBase<Request1, Request1._Fie
       }
       break;
 
+    case SITE_SLOTS:
+      if (value == null) {
+        unsetSiteSlots();
+      } else {
+        setSiteSlots((java.util.List<java.lang.Integer>)value);
+      }
+      break;
+
     }
   }
 
@@ -651,6 +715,9 @@ public class Request1 implements org.apache.thrift.TBase<Request1, Request1._Fie
     case ALPHA:
       return getAlpha();
 
+    case SITE_SLOTS:
+      return getSiteSlots();
+
     }
     throw new java.lang.IllegalStateException();
   }
@@ -680,6 +747,8 @@ public class Request1 implements org.apache.thrift.TBase<Request1, Request1._Fie
       return isSetAssign();
     case ALPHA:
       return isSetAlpha();
+    case SITE_SLOTS:
+      return isSetSiteSlots();
     }
     throw new java.lang.IllegalStateException();
   }
@@ -778,6 +847,15 @@ public class Request1 implements org.apache.thrift.TBase<Request1, Request1._Fie
         return false;
     }
 
+    boolean this_present_siteSlots = true && this.isSetSiteSlots();
+    boolean that_present_siteSlots = true && that.isSetSiteSlots();
+    if (this_present_siteSlots || that_present_siteSlots) {
+      if (!(this_present_siteSlots && that_present_siteSlots))
+        return false;
+      if (!this.siteSlots.equals(that.siteSlots))
+        return false;
+    }
+
     return true;
   }
 
@@ -812,6 +890,10 @@ public class Request1 implements org.apache.thrift.TBase<Request1, Request1._Fie
       hashCode = hashCode * 8191 + assign.hashCode();
 
     hashCode = hashCode * 8191 + org.apache.thrift.TBaseHelper.hashCode(alpha);
+
+    hashCode = hashCode * 8191 + ((isSetSiteSlots()) ? 131071 : 524287);
+    if (isSetSiteSlots())
+      hashCode = hashCode * 8191 + siteSlots.hashCode();
 
     return hashCode;
   }
@@ -914,6 +996,16 @@ public class Request1 implements org.apache.thrift.TBase<Request1, Request1._Fie
         return lastComparison;
       }
     }
+    lastComparison = java.lang.Boolean.compare(isSetSiteSlots(), other.isSetSiteSlots());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetSiteSlots()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.siteSlots, other.siteSlots);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     return 0;
   }
 
@@ -1000,6 +1092,14 @@ public class Request1 implements org.apache.thrift.TBase<Request1, Request1._Fie
     sb.append("alpha:");
     sb.append(this.alpha);
     first = false;
+    if (!first) sb.append(", ");
+    sb.append("siteSlots:");
+    if (this.siteSlots == null) {
+      sb.append("null");
+    } else {
+      sb.append(this.siteSlots);
+    }
+    first = false;
     sb.append(")");
     return sb.toString();
   }
@@ -1010,6 +1110,9 @@ public class Request1 implements org.apache.thrift.TBase<Request1, Request1._Fie
     // alas, we cannot check 'numReducers' because it's a primitive and you chose the non-beans generator.
     // alas, we cannot check 'numSites' because it's a primitive and you chose the non-beans generator.
     // alas, we cannot check 'alpha' because it's a primitive and you chose the non-beans generator.
+    if (siteSlots == null) {
+      throw new org.apache.thrift.protocol.TProtocolException("Required field 'siteSlots' was not present! Struct: " + toString());
+    }
     // check for sub-struct validity
   }
 
@@ -1211,6 +1314,24 @@ public class Request1 implements org.apache.thrift.TBase<Request1, Request1._Fie
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
+          case 10: // SITE_SLOTS
+            if (schemeField.type == org.apache.thrift.protocol.TType.LIST) {
+              {
+                org.apache.thrift.protocol.TList _list27 = iprot.readListBegin();
+                struct.siteSlots = new java.util.ArrayList<java.lang.Integer>(_list27.size);
+                int _elem28;
+                for (int _i29 = 0; _i29 < _list27.size; ++_i29)
+                {
+                  _elem28 = iprot.readI32();
+                  struct.siteSlots.add(_elem28);
+                }
+                iprot.readListEnd();
+              }
+              struct.setSiteSlotsIsSet(true);
+            } else { 
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+            }
+            break;
           default:
             org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
         }
@@ -1252,13 +1373,13 @@ public class Request1 implements org.apache.thrift.TBase<Request1, Request1._Fie
           oprot.writeFieldBegin(BANDWIDTH_FIELD_DESC);
           {
             oprot.writeListBegin(new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.LIST, struct.bandwidth.size()));
-            for (java.util.List<java.lang.Integer> _iter27 : struct.bandwidth)
+            for (java.util.List<java.lang.Integer> _iter30 : struct.bandwidth)
             {
               {
-                oprot.writeListBegin(new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.I32, _iter27.size()));
-                for (int _iter28 : _iter27)
+                oprot.writeListBegin(new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.I32, _iter30.size()));
+                for (int _iter31 : _iter30)
                 {
-                  oprot.writeI32(_iter28);
+                  oprot.writeI32(_iter31);
                 }
                 oprot.writeListEnd();
               }
@@ -1273,13 +1394,13 @@ public class Request1 implements org.apache.thrift.TBase<Request1, Request1._Fie
           oprot.writeFieldBegin(FINISH_TIME_FIELD_DESC);
           {
             oprot.writeListBegin(new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.LIST, struct.finishTime.size()));
-            for (java.util.List<java.lang.Integer> _iter29 : struct.finishTime)
+            for (java.util.List<java.lang.Integer> _iter32 : struct.finishTime)
             {
               {
-                oprot.writeListBegin(new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.I32, _iter29.size()));
-                for (int _iter30 : _iter29)
+                oprot.writeListBegin(new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.I32, _iter32.size()));
+                for (int _iter33 : _iter32)
                 {
-                  oprot.writeI32(_iter30);
+                  oprot.writeI32(_iter33);
                 }
                 oprot.writeListEnd();
               }
@@ -1294,17 +1415,17 @@ public class Request1 implements org.apache.thrift.TBase<Request1, Request1._Fie
           oprot.writeFieldBegin(OUTPUT_SIZE_FIELD_DESC);
           {
             oprot.writeListBegin(new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.LIST, struct.outputSize.size()));
-            for (java.util.List<java.util.List<java.lang.Long>> _iter31 : struct.outputSize)
+            for (java.util.List<java.util.List<java.lang.Long>> _iter34 : struct.outputSize)
             {
               {
-                oprot.writeListBegin(new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.LIST, _iter31.size()));
-                for (java.util.List<java.lang.Long> _iter32 : _iter31)
+                oprot.writeListBegin(new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.LIST, _iter34.size()));
+                for (java.util.List<java.lang.Long> _iter35 : _iter34)
                 {
                   {
-                    oprot.writeListBegin(new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.I64, _iter32.size()));
-                    for (long _iter33 : _iter32)
+                    oprot.writeListBegin(new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.I64, _iter35.size()));
+                    for (long _iter36 : _iter35)
                     {
-                      oprot.writeI64(_iter33);
+                      oprot.writeI64(_iter36);
                     }
                     oprot.writeListEnd();
                   }
@@ -1322,9 +1443,9 @@ public class Request1 implements org.apache.thrift.TBase<Request1, Request1._Fie
           oprot.writeFieldBegin(SITE_LOAD_FIELD_DESC);
           {
             oprot.writeListBegin(new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.DOUBLE, struct.siteLoad.size()));
-            for (double _iter34 : struct.siteLoad)
+            for (double _iter37 : struct.siteLoad)
             {
-              oprot.writeDouble(_iter34);
+              oprot.writeDouble(_iter37);
             }
             oprot.writeListEnd();
           }
@@ -1336,9 +1457,9 @@ public class Request1 implements org.apache.thrift.TBase<Request1, Request1._Fie
           oprot.writeFieldBegin(ASSIGN_FIELD_DESC);
           {
             oprot.writeListBegin(new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.I32, struct.assign.size()));
-            for (int _iter35 : struct.assign)
+            for (int _iter38 : struct.assign)
             {
-              oprot.writeI32(_iter35);
+              oprot.writeI32(_iter38);
             }
             oprot.writeListEnd();
           }
@@ -1348,6 +1469,18 @@ public class Request1 implements org.apache.thrift.TBase<Request1, Request1._Fie
       oprot.writeFieldBegin(ALPHA_FIELD_DESC);
       oprot.writeDouble(struct.alpha);
       oprot.writeFieldEnd();
+      if (struct.siteSlots != null) {
+        oprot.writeFieldBegin(SITE_SLOTS_FIELD_DESC);
+        {
+          oprot.writeListBegin(new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.I32, struct.siteSlots.size()));
+          for (int _iter39 : struct.siteSlots)
+          {
+            oprot.writeI32(_iter39);
+          }
+          oprot.writeListEnd();
+        }
+        oprot.writeFieldEnd();
+      }
       oprot.writeFieldStop();
       oprot.writeStructEnd();
     }
@@ -1369,6 +1502,13 @@ public class Request1 implements org.apache.thrift.TBase<Request1, Request1._Fie
       oprot.writeI32(struct.numReducers);
       oprot.writeI32(struct.numSites);
       oprot.writeDouble(struct.alpha);
+      {
+        oprot.writeI32(struct.siteSlots.size());
+        for (int _iter40 : struct.siteSlots)
+        {
+          oprot.writeI32(_iter40);
+        }
+      }
       java.util.BitSet optionals = new java.util.BitSet();
       if (struct.isSetBandwidth()) {
         optionals.set(0);
@@ -1389,13 +1529,13 @@ public class Request1 implements org.apache.thrift.TBase<Request1, Request1._Fie
       if (struct.isSetBandwidth()) {
         {
           oprot.writeI32(struct.bandwidth.size());
-          for (java.util.List<java.lang.Integer> _iter36 : struct.bandwidth)
+          for (java.util.List<java.lang.Integer> _iter41 : struct.bandwidth)
           {
             {
-              oprot.writeI32(_iter36.size());
-              for (int _iter37 : _iter36)
+              oprot.writeI32(_iter41.size());
+              for (int _iter42 : _iter41)
               {
-                oprot.writeI32(_iter37);
+                oprot.writeI32(_iter42);
               }
             }
           }
@@ -1404,13 +1544,13 @@ public class Request1 implements org.apache.thrift.TBase<Request1, Request1._Fie
       if (struct.isSetFinishTime()) {
         {
           oprot.writeI32(struct.finishTime.size());
-          for (java.util.List<java.lang.Integer> _iter38 : struct.finishTime)
+          for (java.util.List<java.lang.Integer> _iter43 : struct.finishTime)
           {
             {
-              oprot.writeI32(_iter38.size());
-              for (int _iter39 : _iter38)
+              oprot.writeI32(_iter43.size());
+              for (int _iter44 : _iter43)
               {
-                oprot.writeI32(_iter39);
+                oprot.writeI32(_iter44);
               }
             }
           }
@@ -1419,17 +1559,17 @@ public class Request1 implements org.apache.thrift.TBase<Request1, Request1._Fie
       if (struct.isSetOutputSize()) {
         {
           oprot.writeI32(struct.outputSize.size());
-          for (java.util.List<java.util.List<java.lang.Long>> _iter40 : struct.outputSize)
+          for (java.util.List<java.util.List<java.lang.Long>> _iter45 : struct.outputSize)
           {
             {
-              oprot.writeI32(_iter40.size());
-              for (java.util.List<java.lang.Long> _iter41 : _iter40)
+              oprot.writeI32(_iter45.size());
+              for (java.util.List<java.lang.Long> _iter46 : _iter45)
               {
                 {
-                  oprot.writeI32(_iter41.size());
-                  for (long _iter42 : _iter41)
+                  oprot.writeI32(_iter46.size());
+                  for (long _iter47 : _iter46)
                   {
-                    oprot.writeI64(_iter42);
+                    oprot.writeI64(_iter47);
                   }
                 }
               }
@@ -1440,18 +1580,18 @@ public class Request1 implements org.apache.thrift.TBase<Request1, Request1._Fie
       if (struct.isSetSiteLoad()) {
         {
           oprot.writeI32(struct.siteLoad.size());
-          for (double _iter43 : struct.siteLoad)
+          for (double _iter48 : struct.siteLoad)
           {
-            oprot.writeDouble(_iter43);
+            oprot.writeDouble(_iter48);
           }
         }
       }
       if (struct.isSetAssign()) {
         {
           oprot.writeI32(struct.assign.size());
-          for (int _iter44 : struct.assign)
+          for (int _iter49 : struct.assign)
           {
-            oprot.writeI32(_iter44);
+            oprot.writeI32(_iter49);
           }
         }
       }
@@ -1468,104 +1608,115 @@ public class Request1 implements org.apache.thrift.TBase<Request1, Request1._Fie
       struct.setNumSitesIsSet(true);
       struct.alpha = iprot.readDouble();
       struct.setAlphaIsSet(true);
+      {
+        org.apache.thrift.protocol.TList _list50 = iprot.readListBegin(org.apache.thrift.protocol.TType.I32);
+        struct.siteSlots = new java.util.ArrayList<java.lang.Integer>(_list50.size);
+        int _elem51;
+        for (int _i52 = 0; _i52 < _list50.size; ++_i52)
+        {
+          _elem51 = iprot.readI32();
+          struct.siteSlots.add(_elem51);
+        }
+      }
+      struct.setSiteSlotsIsSet(true);
       java.util.BitSet incoming = iprot.readBitSet(5);
       if (incoming.get(0)) {
         {
-          org.apache.thrift.protocol.TList _list45 = iprot.readListBegin(org.apache.thrift.protocol.TType.LIST);
-          struct.bandwidth = new java.util.ArrayList<java.util.List<java.lang.Integer>>(_list45.size);
-          @org.apache.thrift.annotation.Nullable java.util.List<java.lang.Integer> _elem46;
-          for (int _i47 = 0; _i47 < _list45.size; ++_i47)
+          org.apache.thrift.protocol.TList _list53 = iprot.readListBegin(org.apache.thrift.protocol.TType.LIST);
+          struct.bandwidth = new java.util.ArrayList<java.util.List<java.lang.Integer>>(_list53.size);
+          @org.apache.thrift.annotation.Nullable java.util.List<java.lang.Integer> _elem54;
+          for (int _i55 = 0; _i55 < _list53.size; ++_i55)
           {
             {
-              org.apache.thrift.protocol.TList _list48 = iprot.readListBegin(org.apache.thrift.protocol.TType.I32);
-              _elem46 = new java.util.ArrayList<java.lang.Integer>(_list48.size);
-              int _elem49;
-              for (int _i50 = 0; _i50 < _list48.size; ++_i50)
+              org.apache.thrift.protocol.TList _list56 = iprot.readListBegin(org.apache.thrift.protocol.TType.I32);
+              _elem54 = new java.util.ArrayList<java.lang.Integer>(_list56.size);
+              int _elem57;
+              for (int _i58 = 0; _i58 < _list56.size; ++_i58)
               {
-                _elem49 = iprot.readI32();
-                _elem46.add(_elem49);
+                _elem57 = iprot.readI32();
+                _elem54.add(_elem57);
               }
             }
-            struct.bandwidth.add(_elem46);
+            struct.bandwidth.add(_elem54);
           }
         }
         struct.setBandwidthIsSet(true);
       }
       if (incoming.get(1)) {
         {
-          org.apache.thrift.protocol.TList _list51 = iprot.readListBegin(org.apache.thrift.protocol.TType.LIST);
-          struct.finishTime = new java.util.ArrayList<java.util.List<java.lang.Integer>>(_list51.size);
-          @org.apache.thrift.annotation.Nullable java.util.List<java.lang.Integer> _elem52;
-          for (int _i53 = 0; _i53 < _list51.size; ++_i53)
+          org.apache.thrift.protocol.TList _list59 = iprot.readListBegin(org.apache.thrift.protocol.TType.LIST);
+          struct.finishTime = new java.util.ArrayList<java.util.List<java.lang.Integer>>(_list59.size);
+          @org.apache.thrift.annotation.Nullable java.util.List<java.lang.Integer> _elem60;
+          for (int _i61 = 0; _i61 < _list59.size; ++_i61)
           {
             {
-              org.apache.thrift.protocol.TList _list54 = iprot.readListBegin(org.apache.thrift.protocol.TType.I32);
-              _elem52 = new java.util.ArrayList<java.lang.Integer>(_list54.size);
-              int _elem55;
-              for (int _i56 = 0; _i56 < _list54.size; ++_i56)
+              org.apache.thrift.protocol.TList _list62 = iprot.readListBegin(org.apache.thrift.protocol.TType.I32);
+              _elem60 = new java.util.ArrayList<java.lang.Integer>(_list62.size);
+              int _elem63;
+              for (int _i64 = 0; _i64 < _list62.size; ++_i64)
               {
-                _elem55 = iprot.readI32();
-                _elem52.add(_elem55);
+                _elem63 = iprot.readI32();
+                _elem60.add(_elem63);
               }
             }
-            struct.finishTime.add(_elem52);
+            struct.finishTime.add(_elem60);
           }
         }
         struct.setFinishTimeIsSet(true);
       }
       if (incoming.get(2)) {
         {
-          org.apache.thrift.protocol.TList _list57 = iprot.readListBegin(org.apache.thrift.protocol.TType.LIST);
-          struct.outputSize = new java.util.ArrayList<java.util.List<java.util.List<java.lang.Long>>>(_list57.size);
-          @org.apache.thrift.annotation.Nullable java.util.List<java.util.List<java.lang.Long>> _elem58;
-          for (int _i59 = 0; _i59 < _list57.size; ++_i59)
+          org.apache.thrift.protocol.TList _list65 = iprot.readListBegin(org.apache.thrift.protocol.TType.LIST);
+          struct.outputSize = new java.util.ArrayList<java.util.List<java.util.List<java.lang.Long>>>(_list65.size);
+          @org.apache.thrift.annotation.Nullable java.util.List<java.util.List<java.lang.Long>> _elem66;
+          for (int _i67 = 0; _i67 < _list65.size; ++_i67)
           {
             {
-              org.apache.thrift.protocol.TList _list60 = iprot.readListBegin(org.apache.thrift.protocol.TType.LIST);
-              _elem58 = new java.util.ArrayList<java.util.List<java.lang.Long>>(_list60.size);
-              @org.apache.thrift.annotation.Nullable java.util.List<java.lang.Long> _elem61;
-              for (int _i62 = 0; _i62 < _list60.size; ++_i62)
+              org.apache.thrift.protocol.TList _list68 = iprot.readListBegin(org.apache.thrift.protocol.TType.LIST);
+              _elem66 = new java.util.ArrayList<java.util.List<java.lang.Long>>(_list68.size);
+              @org.apache.thrift.annotation.Nullable java.util.List<java.lang.Long> _elem69;
+              for (int _i70 = 0; _i70 < _list68.size; ++_i70)
               {
                 {
-                  org.apache.thrift.protocol.TList _list63 = iprot.readListBegin(org.apache.thrift.protocol.TType.I64);
-                  _elem61 = new java.util.ArrayList<java.lang.Long>(_list63.size);
-                  long _elem64;
-                  for (int _i65 = 0; _i65 < _list63.size; ++_i65)
+                  org.apache.thrift.protocol.TList _list71 = iprot.readListBegin(org.apache.thrift.protocol.TType.I64);
+                  _elem69 = new java.util.ArrayList<java.lang.Long>(_list71.size);
+                  long _elem72;
+                  for (int _i73 = 0; _i73 < _list71.size; ++_i73)
                   {
-                    _elem64 = iprot.readI64();
-                    _elem61.add(_elem64);
+                    _elem72 = iprot.readI64();
+                    _elem69.add(_elem72);
                   }
                 }
-                _elem58.add(_elem61);
+                _elem66.add(_elem69);
               }
             }
-            struct.outputSize.add(_elem58);
+            struct.outputSize.add(_elem66);
           }
         }
         struct.setOutputSizeIsSet(true);
       }
       if (incoming.get(3)) {
         {
-          org.apache.thrift.protocol.TList _list66 = iprot.readListBegin(org.apache.thrift.protocol.TType.DOUBLE);
-          struct.siteLoad = new java.util.ArrayList<java.lang.Double>(_list66.size);
-          double _elem67;
-          for (int _i68 = 0; _i68 < _list66.size; ++_i68)
+          org.apache.thrift.protocol.TList _list74 = iprot.readListBegin(org.apache.thrift.protocol.TType.DOUBLE);
+          struct.siteLoad = new java.util.ArrayList<java.lang.Double>(_list74.size);
+          double _elem75;
+          for (int _i76 = 0; _i76 < _list74.size; ++_i76)
           {
-            _elem67 = iprot.readDouble();
-            struct.siteLoad.add(_elem67);
+            _elem75 = iprot.readDouble();
+            struct.siteLoad.add(_elem75);
           }
         }
         struct.setSiteLoadIsSet(true);
       }
       if (incoming.get(4)) {
         {
-          org.apache.thrift.protocol.TList _list69 = iprot.readListBegin(org.apache.thrift.protocol.TType.I32);
-          struct.assign = new java.util.ArrayList<java.lang.Integer>(_list69.size);
-          int _elem70;
-          for (int _i71 = 0; _i71 < _list69.size; ++_i71)
+          org.apache.thrift.protocol.TList _list77 = iprot.readListBegin(org.apache.thrift.protocol.TType.I32);
+          struct.assign = new java.util.ArrayList<java.lang.Integer>(_list77.size);
+          int _elem78;
+          for (int _i79 = 0; _i79 < _list77.size; ++_i79)
           {
-            _elem70 = iprot.readI32();
-            struct.assign.add(_elem70);
+            _elem78 = iprot.readI32();
+            struct.assign.add(_elem78);
           }
         }
         struct.setAssignIsSet(true);

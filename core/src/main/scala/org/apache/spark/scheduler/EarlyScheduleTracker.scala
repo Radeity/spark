@@ -52,7 +52,7 @@ private[spark] class EarlyScheduleTracker(sc: SparkContext, conf: SparkConf, rpc
   val server = launchThriftServer()
   val thriftClient = buildThriftClient()
 
-  val siteSlots = new HashMap[String, Int]
+  val siteSlots: ArrayBuffer[Integer] = ArrayBuffer(0, 0, 0, 0, 0)
   val executorCores = new HashMap[String, Int]
   val hostToExecutors = new HashMap[String, HashSet[String]]
 
@@ -210,9 +210,9 @@ private[spark] class EarlyScheduleTracker(sc: SparkContext, conf: SparkConf, rpc
       newSlots = allCores - executorCores(executorId)
     }
     executorCores(executorId) = allCores
-    val site: String = hostSite.getOrElse(host, "-1")
-    val currentSlots = siteSlots.getOrElse(site, 0)
-    siteSlots(hostSite(host)) = currentSlots + newSlots
+    val site: Int = Integer.parseInt(hostSite.getOrElse(host, "-1"))
+    val currentSlots = siteSlots(site)
+    siteSlots(site) = currentSlots + newSlots
 
     // remove executor
     if (allCores == 0) {
@@ -274,10 +274,10 @@ private[spark] class EarlyScheduleTracker(sc: SparkContext, conf: SparkConf, rpc
     // val responseM2 = thriftClient.m2(new Request7(appUniqueId, mapStageId))
     // val outputSize = responseM2.outputSize
 
-    val siteLoads = new Array[Double](siteSlots.size)
+    val siteLoads = new Array[Double](siteSlots.length)
     val futureMap = new HashMap[String, Future[_]]
-    siteSlots.foreach(item => {
-      val site = item._1
+    for (idx <- siteSlots.indices) {
+      val site = String.valueOf(idx)
       val execSet = hostToExecutors(siteLocation(site).head)
       val it = execSet.iterator
       val executorId = it.next()
@@ -289,27 +289,28 @@ private[spark] class EarlyScheduleTracker(sc: SparkContext, conf: SparkConf, rpc
         }
       })
       futureMap.put(site, future)
-    })
+    }
+
     futureMap.foreach(item => {
       item._2.get()
     })
 
     var loadMin: Double = 10
     var loadMax: Double = -1
-    for (i <- 0 until siteSlots.size) {
+    for (i <- siteSlots.indices) {
       loadMin = Math.min(loadMin, siteLoads(i))
       loadMax = Math.max(loadMax, siteLoads(i))
     }
     val capacity = new Array[java.lang.Double](siteSlots.size)
-    for (i <- 0 until siteSlots.size) {
-      val c = siteSlots(String.valueOf(i)) /
+    for (i <- siteSlots.indices) {
+      val c = siteSlots(i) /
         (0.5 + 0.5 * (siteLoads(i) - loadMin) / (loadMax - loadMin))
       capacity(i) = c
-      logInfo(s"[Early-Schedule] Site $i, slot:${siteSlots(String.valueOf(i))}, Capacitity:$c")
+      logInfo(s"[Early-Schedule] Site $i, slot:${siteSlots(i)}, Capacitity:$c")
     }
 
     import scala.collection.JavaConverters._
-    val request = new Request1(numMappers, numReducers, numSites, 0.5)
+    val request = new Request1(numMappers, numReducers, numSites, 0.5, siteSlots.toList.asJava)
     // NOTE: Comment the following parameters for Test
 //    request.setBandwidth(bandwidthMatrix)
 //    request.setFinishTime(finishTime)

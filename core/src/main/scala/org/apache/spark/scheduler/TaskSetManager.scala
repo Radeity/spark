@@ -407,7 +407,7 @@ private[spark] class TaskSetManager(
       }
     }
 
-    if (siteNumber == 1) {
+    if (parentStageId != -1 || siteNumber == 1) {
       if (TaskLocality.isAllowed(maxLocality, TaskLocality.RACK_LOCAL)) {
         for {
           rack <- sched.getRackForHost(host)
